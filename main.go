@@ -23,7 +23,7 @@ type dejurniy struct {
 	}
 }
 
-
+const timeTempl = "2 1 2006 15:04 (MST)"
 
 func readXLSX(schedule string) []dejurniy {
 	f, err := excelize.OpenFile(schedule)
@@ -76,12 +76,12 @@ func readXLSX(schedule string) []dejurniy {
 			// Extraction Time Duty
 			if j >= 4 && i >= 12 && i <= len(rows)-2 && strings.Contains(colCell, ":") {
 				if i%2 == 0 {
-					dej.drasp[j-4].begin, _ = time.Parse("2 1 2006 15:04", strconv.Itoa(j-3)+" "+month+" "+year+" "+colCell)
+					dej.drasp[j-4].begin, _ = time.Parse(timeTempl, strconv.Itoa(j-3)+" "+month+" "+year+" "+colCell+" (MSK)")
 				} else {
 					if colCell == "24:00" {
 						colCell =  "23:59"
 					}
-					dej.drasp[j-4].end, _ = time.Parse("2 1 2006 15:04", strconv.Itoa(j-3)+" "+month+" "+year+" "+colCell)
+					dej.drasp[j-4].end, _ = time.Parse(timeTempl, strconv.Itoa(j-3)+" "+month+" "+year+" "+colCell+" (MSK)")
 				}
 			}
 			if i >= 12 && (i+1) % 4 == 0 && j == len(rows[12])-1 {
@@ -192,7 +192,6 @@ func telegramBot(dej1, dej2 []dejurniy) {
 
 	for update := range updates {
 		if update.Message != nil {
-
 			//Проверяем что от пользователья пришло именно текстовое сообщение
 			if reflect.TypeOf(update.Message.Text).Kind() == reflect.String && update.Message.Text != "" {
 				switch update.Message.Text {
@@ -202,9 +201,9 @@ func telegramBot(dej1, dej2 []dejurniy) {
 					if _, err := bot.Send(msg); err != nil {
 						log.Panic(err)
 					}
-
 				case "Кто сейчас на смене?":
 					today := time.Now().Local()
+					fmt.Println(today)
 					nameduty1 := whoDuty(today, dej1)
 					nameduty2 := whoDuty(today, dej2)
 					imgfile := ""
@@ -313,7 +312,8 @@ func telegramBot(dej1, dej2 []dejurniy) {
 						if _, err := bot.Send(pht); err != nil {
 							log.Panic(err)
 						}
-					} else if containsStr(getListDuty(dej2), update.Message.Text) {
+					} else
+					if containsStr(getListDuty(dej2), update.Message.Text) {
 						imgfile := ""
 						switch update.Message.Text {
 						case "Абдуллаев М.М.":
@@ -333,115 +333,117 @@ func telegramBot(dej1, dej2 []dejurniy) {
 						if _, err := bot.Send(pht); err != nil {
 							log.Panic(err)
 						}
-					} else if containsInt(update.Message.Text) {
+					} else
+					if containsInt(update.Message.Text) {
 						msg := tgbotapi.NewMessage(update.Message.Chat.ID, "День/Ночь")
 						msg.ReplyMarkup = kbrd.GetMenuDayNight(strings.Trim(update.Message.Text, "-"))
 						if _, err := bot.Send(msg); err != nil {
 							log.Panic(err)
 						}
-					} else if len(update.Message.Text) >= 19 {
-						if str := update.Message.Text; str [len(str )-19:len(str )] == "Дневная 🌝"{
-							selDay := strings.Trim(update.Message.Text, " Дневная 🌝")
-							fmt.Println(selDay)
-							strDate := selDay+time.Now().Local().Format(" 1 2006 ")+"15:00"
-							fmt.Println(strDate)
-							calDate,_ := time.Parse("2 1 2006 15:04", strDate)
-							fmt.Println(calDate)
-							nameduty1 := whoDuty(calDate, dej1)
-							nameduty2 := whoDuty(calDate, dej2)
-							imgfile := ""
+					} else
+					if str := update.Message.Text; (len(update.Message.Text) >= 19) && (str[len(str)-19:len(str)] == "Дневная 🌝") {
+						selDay := strings.Trim(update.Message.Text, " Дневная 🌝")
+						//fmt.Println(selDay)
+						strDate := selDay + time.Now().Local().Format(" 1 2006 ") + "15:00"
+						//fmt.Println(strDate)
+						calDate, _ := time.Parse(timeTempl, strDate+" (MSK)")
+						fmt.Println(calDate)
+						nameduty1 := whoDuty(calDate, dej1)
+						nameduty2 := whoDuty(calDate, dej2)
+						imgfile := ""
 
-							switch nameduty1 {
-							case "Велиханов А.В.":
-								imgfile = "photo/VAV.jpg"
-							case "Нурмагомедов Р.М.":
-								imgfile = "photo/NRM.jpg"
-							case "Сулейманов И.А.":
-								imgfile = "photo/SIA.jpg"
-							case "Сулейманов Ш.А.":
-								imgfile = "photo/SSA.jpg"
-							case "Яхьяев М.Л.":
-								imgfile = "photo/YML.jpg"
-							case "Магомедрасулов М.Б":
-								imgfile = "photo/MMB.jpg"
-							}
-							pht1 := tgbotapi.NewPhoto(update.Message.Chat.ID, imgfile)
-							pht1.ReplyMarkup = kbrd.InlineKeyboardMaker(allSchedule(nameduty1, dej1))
-							pht1.Caption = nameduty1 + " - Дежурный ООЭ АСУ"
-							if _, err := bot.Send(pht1); err != nil {
-								log.Panic(err)
-							}
-
-							switch nameduty2 {
-							case "Абдуллаев М.М.":
-								imgfile = "photo/AMM.jpg"
-							case "Газиев Г.М.":
-								imgfile = "photo/GGM.jpg"
-							case "Идрисов М.А.":
-								imgfile = "photo/IMA.jpg"
-							case "Кузнецов Д.В.":
-								imgfile = "photo/KDV.jpg"
-							case "Шихвеледов Р.Ш.":
-								imgfile = "photo/SRS.jpg"
-							}
-							pht2 := tgbotapi.NewPhoto(update.Message.Chat.ID, imgfile)
-							pht2.ReplyMarkup = kbrd.InlineKeyboardMaker(allSchedule(nameduty2, dej2))
-							pht2.Caption = nameduty2 + " - Дежурный ОИХО"
-							if _, err := bot.Send(pht2); err != nil {
-								log.Panic(err)
-							}
-						} else if str := update.Message.Text; str[len(str)-17:len(str)] == "Ночная 🌚" {
-							selDay := strings.Trim(update.Message.Text, " Ночная 🌚")
-							fmt.Println(selDay)
-							strDate := selDay + time.Now().Local().Format(" 1 2006 ") + "22:00"
-							fmt.Println(strDate)
-							calDate, _ := time.Parse("2 1 2006 15:04", strDate)
-							fmt.Println(calDate)
-							nameduty1 := whoDuty(calDate, dej1)
-							nameduty2 := whoDuty(calDate, dej2)
-							imgfile := ""
-
-							switch nameduty1 {
-							case "Велиханов А.В.":
-								imgfile = "photo/VAV.jpg"
-							case "Нурмагомедов Р.М.":
-								imgfile = "photo/NRM.jpg"
-							case "Сулейманов И.А.":
-								imgfile = "photo/SIA.jpg"
-							case "Сулейманов Ш.А.":
-								imgfile = "photo/SSA.jpg"
-							case "Яхьяев М.Л.":
-								imgfile = "photo/YML.jpg"
-							case "Магомедрасулов М.Б":
-								imgfile = "photo/MMB.jpg"
-							}
-							pht1 := tgbotapi.NewPhoto(update.Message.Chat.ID, imgfile)
-							pht1.ReplyMarkup = kbrd.InlineKeyboardMaker(allSchedule(nameduty1, dej1))
-							pht1.Caption = nameduty1 + " - Дежурный ООЭ АСУ"
-							if _, err := bot.Send(pht1); err != nil {
-								log.Panic(err)
-							}
-
-							switch nameduty2 {
-							case "Абдуллаев М.М.":
-								imgfile = "photo/AMM.jpg"
-							case "Газиев Г.М.":
-								imgfile = "photo/GGM.jpg"
-							case "Идрисов М.А.":
-								imgfile = "photo/IMA.jpg"
-							case "Кузнецов Д.В.":
-								imgfile = "photo/KDV.jpg"
-							case "Шихвеледов Р.Ш.":
-								imgfile = "photo/SRS.jpg"
-							}
-							pht2 := tgbotapi.NewPhoto(update.Message.Chat.ID, imgfile)
-							pht2.ReplyMarkup = kbrd.InlineKeyboardMaker(allSchedule(nameduty2, dej2))
-							pht2.Caption = nameduty2 + " - Дежурный ОИХО"
-							if _, err := bot.Send(pht2); err != nil {
-								log.Panic(err)
-							}
+						switch nameduty1 {
+						case "Велиханов А.В.":
+							imgfile = "photo/VAV.jpg"
+						case "Нурмагомедов Р.М.":
+							imgfile = "photo/NRM.jpg"
+						case "Сулейманов И.А.":
+							imgfile = "photo/SIA.jpg"
+						case "Сулейманов Ш.А.":
+							imgfile = "photo/SSA.jpg"
+						case "Яхьяев М.Л.":
+							imgfile = "photo/YML.jpg"
+						case "Магомедрасулов М.Б":
+							imgfile = "photo/MMB.jpg"
 						}
-					} else {
+						pht1 := tgbotapi.NewPhoto(update.Message.Chat.ID, imgfile)
+						pht1.ReplyMarkup = kbrd.InlineKeyboardMaker(allSchedule(nameduty1, dej1))
+						pht1.Caption = nameduty1 + " - Дежурный ООЭ АСУ"
+						if _, err := bot.Send(pht1); err != nil {
+							log.Panic(err)
+						}
+
+						switch nameduty2 {
+						case "Абдуллаев М.М.":
+							imgfile = "photo/AMM.jpg"
+						case "Газиев Г.М.":
+							imgfile = "photo/GGM.jpg"
+						case "Идрисов М.А.":
+							imgfile = "photo/IMA.jpg"
+						case "Кузнецов Д.В.":
+							imgfile = "photo/KDV.jpg"
+						case "Шихвеледов Р.Ш.":
+							imgfile = "photo/SRS.jpg"
+						}
+						pht2 := tgbotapi.NewPhoto(update.Message.Chat.ID, imgfile)
+						pht2.ReplyMarkup = kbrd.InlineKeyboardMaker(allSchedule(nameduty2, dej2))
+						pht2.Caption = nameduty2 + " - Дежурный ОИХО"
+						if _, err := bot.Send(pht2); err != nil {
+							log.Panic(err)
+						}
+					} else
+					if str := update.Message.Text; (len(update.Message.Text) >= 19) && (str[len(str)-17:len(str)] == "Ночная 🌚") {
+						selDay := strings.Trim(update.Message.Text, " Ночная 🌚")
+						fmt.Println(selDay)
+						strDate := selDay + time.Now().Local().Format(" 1 2006 ") + "22:00"
+						fmt.Println(strDate)
+						calDate, _ := time.Parse(timeTempl, strDate+" (MSK)")
+						fmt.Println(calDate)
+						nameduty1 := whoDuty(calDate, dej1)
+						nameduty2 := whoDuty(calDate, dej2)
+						imgfile := ""
+
+						switch nameduty1 {
+						case "Велиханов А.В.":
+							imgfile = "photo/VAV.jpg"
+						case "Нурмагомедов Р.М.":
+							imgfile = "photo/NRM.jpg"
+						case "Сулейманов И.А.":
+							imgfile = "photo/SIA.jpg"
+						case "Сулейманов Ш.А.":
+							imgfile = "photo/SSA.jpg"
+						case "Яхьяев М.Л.":
+							imgfile = "photo/YML.jpg"
+						case "Магомедрасулов М.Б":
+							imgfile = "photo/MMB.jpg"
+						}
+						pht1 := tgbotapi.NewPhoto(update.Message.Chat.ID, imgfile)
+						pht1.ReplyMarkup = kbrd.InlineKeyboardMaker(allSchedule(nameduty1, dej1))
+						pht1.Caption = nameduty1 + " - Дежурный ООЭ АСУ"
+						if _, err := bot.Send(pht1); err != nil {
+							log.Panic(err)
+						}
+
+						switch nameduty2 {
+						case "Абдуллаев М.М.":
+							imgfile = "photo/AMM.jpg"
+						case "Газиев Г.М.":
+							imgfile = "photo/GGM.jpg"
+						case "Идрисов М.А.":
+							imgfile = "photo/IMA.jpg"
+						case "Кузнецов Д.В.":
+							imgfile = "photo/KDV.jpg"
+						case "Шихвеледов Р.Ш.":
+							imgfile = "photo/SRS.jpg"
+						}
+						pht2 := tgbotapi.NewPhoto(update.Message.Chat.ID, imgfile)
+						pht2.ReplyMarkup = kbrd.InlineKeyboardMaker(allSchedule(nameduty2, dej2))
+						pht2.Caption = nameduty2 + " - Дежурный ОИХО"
+						if _, err := bot.Send(pht2); err != nil {
+							log.Panic(err)
+						}
+					} else
+					{
 						randomRustam()
 						//Отправлем сообщение
 						msg := tgbotapi.NewMessage(update.Message.Chat.ID, randomRustam())
