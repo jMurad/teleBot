@@ -56,3 +56,5 @@ func stat2(dej dejurniy)  {
 	}
 	fmt.Println("++++++++++++++++++++++++++")
 }
+
+go mod tidy 'command update go.mod'
