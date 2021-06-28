@@ -1,13 +1,14 @@
 package Keyboards
 
 import (
+	fncs "TeleBot/Functions"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"strconv"
 	"time"
 )
 
 var (
-	MenuLevel_1 = tgbotapi.NewReplyKeyboard(
+	MenuLevel1 = tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton("Кто сейчас на смене?"),
 		),
@@ -19,7 +20,7 @@ var (
 		),
 	)
 
-	MenuLevel_1_2 = tgbotapi.NewReplyKeyboard(
+	MenuLevel12 = tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton("ООЭ АСУ"),
 		),
@@ -80,6 +81,7 @@ func CalendarKeyboardMaker() tgbotapi.ReplyKeyboardMarkup {
 	firstday := time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, time.Local)
 	lastday := firstday.AddDate(0, 1, 0).Add(time.Nanosecond * -1).Format("2")
 	ld, _ := strconv.Atoi(lastday)
+	fncs.LastDayOfMonth(time.Now())
 	for day := 1; day <= ld; day++ {
 		i += 1
 		text := "-"+strconv.Itoa(day)+"-"
