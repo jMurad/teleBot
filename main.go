@@ -142,7 +142,7 @@ func allSchedule(name string, dejurs[]dejurniy) [31]string {
 
 func telegramBot(dej1, dej2 []dejurniy) {
 	//Создаем бота
-	bot, err := tgbotapi.NewBotAPI("524283381:AAEAawm4tlOjjWgR_hLx2W4fnsqFvX11XhY")
+	bot, err := tgbotapi.NewBotAPI("")
 	if err != nil {
 		panic(err)
 	}
