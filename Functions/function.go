@@ -26,13 +26,13 @@ func IfStrDay(strDay string) bool {
 	return false
 }
 
-func StrInArray(s []string, e string) bool {
-	for _, a := range s {
+func StrInArray(s []string, e string) (bool, int) {
+	for i, a := range s {
 		if a == e {
-			return true
+			return true, i
 		}
 	}
-	return false
+	return false, -1
 }
 
 func GetPathImg(name string) string {
@@ -91,4 +91,16 @@ func RandomRustam() string {
 		"Если я встану по другому же будешь разговаривать!",
 	}
 	return msg[rnd]
+}
+
+func TripDept(nameDept string) string {
+	strNew := ""
+	for i, str := range strings.ToUpper(nameDept) {
+		if i == 0 {
+			strNew += string(str)
+		} else if nameDept[i-1] == ' ' {
+			strNew += string(str)
+		}
+	}
+	return strNew
 }

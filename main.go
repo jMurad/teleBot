@@ -3,29 +3,35 @@ package main
 import (
 	fncs "TeleBot/Functions"
 	kbrd "TeleBot/Keyboards"
-	"fmt"
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"log"
+	"path/filepath"
 	"reflect"
 	"strconv"
-	"strings"
+	s "strings"
 	"time"
 )
+
 const timeTempl = "2 1 2006 15:04 (MST)"
 
-type dejurniy struct {
-	name	string
-	drasp	[31]struct {
-		begin	time.Time
-		end		time.Time
-	}
+type dejurnie struct {
+	deptName	[]string
+	dept		[]department
 }
 
-func readXLSX(schedule string) []dejurniy {
+type department struct {
+	dutyName	[]string
+	drasp		[]rasp
+}
+
+type rasp [31]struct {
+	begin	time.Time
+	end		time.Time
+}
+
+func (d *dejurnie) readXLSX() {
 	var (
-		dejurs []dejurniy
-		dej dejurniy
 		month,year string
 		MONTH = map[string]string{
 			"Январь": "1",
@@ -43,106 +49,170 @@ func readXLSX(schedule string) []dejurniy {
 		}
 	)
 
-	f, err := excelize.OpenFile(schedule)
+	// Ищем все XLSX файлы с названием текущего месяца
+	t := time.Now().Local().Format("January")
+	files, err := filepath.Glob(s.ToLower(t)+"*.xlsx")
 	if err != nil {
-		fmt.Println(err)
-		return []dejurniy{}
+		panic(err)
 	}
 
-	rows, err := f.GetRows("TDSheet")
-	if err != nil {
-		fmt.Println(err)
-		return []dejurniy{}
-	}
+	// Проходимся по всем файлам XLSX
+	for num, fpath := range files {
+		d.deptName = append(d.deptName, "")
+		d.dept = append(d.dept, department{})
 
-	for i, row := range rows {
-		for j, colCell := range row {
-			// Extraction Month
-			if i == 4 && j == 17 {
-				month = MONTH[colCell]
-			}
+		// Открываем файл XLSX
+		f, err := excelize.OpenFile(fpath)
+		if err != nil {
+			panic(err)
+		}
 
-			// Extraction Year
-			if i == 4 && j == 21 {
-				year = colCell
-			}
+		// Извлекаем все строки страницы TDSheet
+		rows, err := f.GetRows("TDSheet")
+		if err != nil {
+			panic(err)
+		}
 
-			// Extraction Name Dejurniy
-			if i >= 12 && i % 4 == 0 && j == 1 && i <= len(rows)-2 {
-				dej.name = colCell
-			}
+		// Временная переменная для хранения расписания дежурного
+		raspDuty := rasp{}
 
-			// Extraction Time Duty
-			if j >= 4 && i >= 12 && i <= len(rows)-2 && strings.Contains(colCell, ":") {
-				if i%2 == 0 {
-					beginDate := strconv.Itoa(j-3)+" "+month+" "+year+" "+colCell+" (MSK)"
-					dej.drasp[j-4].begin, _ = time.Parse(timeTempl, beginDate)
-				} else {
-					if colCell == "24:00" {
-						colCell =  "23:59"
-					}
-					endDate := strconv.Itoa(j-3)+" "+month+" "+year+" "+colCell+" (MSK)"
-					dej.drasp[j-4].end, _ = time.Parse(timeTempl, endDate)
+		// Проходимся по всем строкам страницы TDSheet
+		for i, row := range rows {
+			for j, colCell := range row {
+				// Извлекаем название Месяца
+				if i == 4 && j == 17 {
+					month = MONTH[colCell]
 				}
-			}
 
-			// Add dej to array dejurs
-			if i >= 12 && (i+1) % 4 == 0 && j == len(rows[12])-1 {
-				dejurs = append(dejurs, dej)
-				dej = dejurniy{}
+				// Извлекаем Год
+				if i == 4 && j == 21 {
+					year = colCell
+				}
+
+				// Извлекаем название Отдела
+				if i == 4 && j == 5 {
+					d.deptName[num] = fncs.TripDept(colCell)
+				}
+
+				// Извлекаем Имя дежурного
+				if i >= 12 && i % 4 == 0 && j == 1 && i <= len(rows)-2 {
+					d.dept[num].dutyName = append(d.dept[num].dutyName, colCell)
+				}
+
+				// Извлекаем Время начала и конца смены
+				if j >= 4 && i >= 12 && i <= len(rows)-2 && s.Contains(colCell, ":") {
+					if i%2 == 0 {
+						beginDate := strconv.Itoa(j-3)+" "+month+" "+year+" "+colCell+" (MSK)"
+						raspDuty[j-4].begin, _ = time.Parse(timeTempl, beginDate)
+					} else {
+						if colCell == "24:00" {
+							colCell =  "23:59"
+						}
+						endDate := strconv.Itoa(j-3)+" "+month+" "+year+" "+colCell+" (MSK)"
+						raspDuty[j-4].end, _ = time.Parse(timeTempl, endDate)
+					}
+				}
+
+				// Добавляем дежурного в список
+				if i >= 12 && (i+1) % 4 == 0 && j == len(rows[12])-1 {
+					d.dept[num].drasp = append(d.dept[num].drasp, raspDuty)
+					raspDuty = rasp{}
+				}
 			}
 		}
 	}
-	return dejurs
 }
 
-func getListDuty(dejurs []dejurniy) []string {
+func (d *dejurnie) getListDept() []string {
+	var listDept []string
+	for _, dn := range d.deptName {
+		listDept = append(listDept, dn)
+	}
+	return listDept
+}
+
+func (d *dejurnie) getListDuty(deptName string) []string {
 	var listDuty []string
-	for _, d := range dejurs {
-		listDuty = append(listDuty, d.name)
+	_, num := fncs.StrInArray(d.deptName, deptName)
+
+	for _, dn := range d.dept[num].dutyName {
+		listDuty = append(listDuty, dn)
 	}
 	return listDuty
 }
 
-func whoDuty(dat time.Time, dejurs []dejurniy) string {
-	var name string
+func (d *dejurnie) getListDutyAll() []string {
+	var listDuty []string
 
-	for _, d := range dejurs {
-		for _, rsp := range d.drasp {
-			if (dat.After(rsp.begin) || dat.Equal(rsp.begin)) && (dat.Before(rsp.end) || dat.Equal(rsp.end)) {
-				name = d.name
+	for _, deptName := range d.deptName {
+		listDuty = append(listDuty, d.getListDuty(deptName)...)
+	}
+	return listDuty
+}
+
+func (d *dejurnie) whoDuty(date time.Time, deptName string) string {
+	_, num := fncs.StrInArray(d.deptName, deptName)
+
+	for i, dr := range d.dept[num].drasp {
+		for _, rsp := range dr {
+			if (date.After(rsp.begin) || date.Equal(rsp.begin)) && (date.Before(rsp.end) || date.Equal(rsp.end)) {
+				result := d.dept[num].dutyName[i]
+				return result
 			}
 		}
 	}
-	return name
+	panic("I don't know")
+	//return result
 }
 
-func allSchedule(name string, dejurs[]dejurniy) [31]string {
+func (d *dejurnie) whoDutyAll(date time.Time) []string {
+	var listDuty []string
+
+	for _, dept := range d.deptName {
+		listDuty = append(listDuty, d.whoDuty(date, dept))
+	}
+	return listDuty
+}
+
+func (d *dejurnie) dutyToDept(dutyName string) string {
+	for i, dept := range d.dept {
+		for _, dn := range dept.dutyName {
+			if dn == dutyName {
+				return d.deptName[i]
+			}
+		}
+	}
+	panic("I don't know")
+}
+
+func (d *dejurnie) getSchedule(dutyName string) [31]string {
 	var schedules [31]string
-	for _, d := range dejurs {
-		if d.name == name {
-			for i, rsp := range d.drasp {
-				if rsp.begin.IsZero() != true {
-					switch rsp.begin.Format("15:04") {
-					case "08:00":
-						schedules[i] = "Day"
-					case "20:00":
-						schedules[i] = "Night"
-					case "00:00":
-						schedules[i] = "Morning"
-					default:
-						schedules[i] = "No"
+	for i, dept := range d.dept {
+		for _, dn := range dept.dutyName {
+			if dn == dutyName {
+				for j, rsp := range dept.drasp[i] {
+					if rsp.begin.IsZero() != true {
+						switch rsp.begin.Format("15:04") {
+						case "08:00":
+							schedules[j] = "Day"
+						case "20:00":
+							schedules[j] = "Night"
+						case "00:00":
+							schedules[j] = "Morning"
+						default:
+							schedules[j] = "No"
+						}
 					}
 				}
-			}
+		}
 		}
 	}
 	return schedules
 }
 
-func telegramBot(dej1, dej2 []dejurniy) {
+func telegramBot(dej dejurnie) {
 	//Создаем бота
-	bot, err := tgbotapi.NewBotAPI("524283381:AAEAawm4tlOjjWgR_hLx2W4fnsqFvX11XhY")
+	bot, err := tgbotapi.NewBotAPI("")
 	if err != nil {
 		panic(err)
 	}
@@ -168,35 +238,18 @@ func telegramBot(dej1, dej2 []dejurniy) {
 					}
 				case "Кто сейчас на смене?":
 					today := time.Now().Local()
-					nameDuty1 := whoDuty(today, dej1)
-					pht1 := tgbotapi.NewPhoto(update.Message.Chat.ID, fncs.GetPathImg(nameDuty1))
-					pht1.ReplyMarkup = kbrd.InlineKeyboardMaker(allSchedule(nameDuty1, dej1))
-					pht1.Caption = nameDuty1 + " - Дежурный ООЭ АСУ"
-					if _, err := bot.Send(pht1); err != nil {
-						log.Panic(err)
-					}
-					nameDuty2 := whoDuty(today, dej2)
-					pht2 := tgbotapi.NewPhoto(update.Message.Chat.ID, fncs.GetPathImg(nameDuty2))
-					pht2.ReplyMarkup = kbrd.InlineKeyboardMaker(allSchedule(nameDuty2, dej2))
-					pht2.Caption = nameDuty2 + " - Дежурный ОИХО"
-					if _, err := bot.Send(pht2); err != nil {
-						log.Panic(err)
+
+					for _, nameDuty := range dej.whoDutyAll(today) {
+						pht := tgbotapi.NewPhoto(update.Message.Chat.ID, fncs.GetPathImg(nameDuty))
+						pht.ReplyMarkup = kbrd.InlineKeyboardMaker(dej.getSchedule(nameDuty))
+						pht.Caption = nameDuty + " - Дежурный " + dej.dutyToDept(nameDuty)
+						if _, err := bot.Send(pht); err != nil {
+							log.Panic(err)
+						}
 					}
 				case "Дежурные":
 					msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Дежурные")
 					msg.ReplyMarkup = kbrd.MenuLevel12
-					if _, err := bot.Send(msg); err != nil {
-						log.Panic(err)
-					}
-				case "ООЭ АСУ":
-					msg := tgbotapi.NewMessage(update.Message.Chat.ID, "ООЭ АСУ")
-					msg.ReplyMarkup = kbrd.GetListDuty(getListDuty(dej1))
-					if _, err := bot.Send(msg); err != nil {
-						log.Panic(err)
-					}
-				case "ОИХО":
-					msg := tgbotapi.NewMessage(update.Message.Chat.ID, "ОИХО")
-					msg.ReplyMarkup = kbrd.GetListDuty(getListDuty(dej2))
 					if _, err := bot.Send(msg); err != nil {
 						log.Panic(err)
 					}
@@ -225,64 +278,47 @@ func telegramBot(dej1, dej2 []dejurniy) {
 						log.Panic(err)
 					}
 				default:
-					if fncs.StrInArray(getListDuty(dej1), text) {
+					if inDuty, _ := fncs.StrInArray(dej.getListDutyAll(), text); inDuty {
 						pht := tgbotapi.NewPhoto(update.Message.Chat.ID, fncs.GetPathImg(text))
-						pht.ReplyMarkup = kbrd.InlineKeyboardMaker(allSchedule(text, dej1))
-						pht.Caption = text + " - Дежурный ООЭ АСУ"
+						pht.ReplyMarkup = kbrd.InlineKeyboardMaker(dej.getSchedule(text))
+						pht.Caption = text + " - Дежурный " + dej.dutyToDept(text)
 						if _, err := bot.Send(pht); err != nil {
-							log.Panic(err)
-						}
-					} else if fncs.StrInArray(getListDuty(dej2), text) {
-						pht := tgbotapi.NewPhoto(update.Message.Chat.ID, fncs.GetPathImg(text))
-						pht.ReplyMarkup = kbrd.InlineKeyboardMaker(allSchedule(text, dej2))
-						pht.Caption = text + " - Дежурный ОИХО"
-						if _, err := bot.Send(pht); err != nil {
-							log.Panic(err)
-						}
-					} else if fncs.IfStrDay(text) {
-						msg := tgbotapi.NewMessage(update.Message.Chat.ID, "День/Ночь")
-						msg.ReplyMarkup = kbrd.GetMenuDayNight(strings.Trim(text, "-"))
-						if _, err := bot.Send(msg); err != nil {
-							log.Panic(err)
-						}
-					} else if str := text; (len(text) >= 19) && (str[len(str)-19:len(str)] == "Дневная 🌝") {
-						selDay := strings.Trim(text, " Дневная 🌝")
-						strDate := selDay + time.Now().Local().Format(" 1 2006 ") + "15:00"
-						calDate, _ := time.Parse(timeTempl, strDate+" (MSK)")
-						nameDuty1 := whoDuty(calDate, dej1)
-						pht1 := tgbotapi.NewPhoto(update.Message.Chat.ID, fncs.GetPathImg(nameDuty1))
-						pht1.ReplyMarkup = kbrd.InlineKeyboardMaker(allSchedule(nameDuty1, dej1))
-						pht1.Caption = nameDuty1 + " - Дежурный ООЭ АСУ"
-						if _, err := bot.Send(pht1); err != nil {
-							log.Panic(err)
-						}
-						nameDuty2 := whoDuty(calDate, dej2)
-						pht2 := tgbotapi.NewPhoto(update.Message.Chat.ID, fncs.GetPathImg(nameDuty2))
-						pht2.ReplyMarkup = kbrd.InlineKeyboardMaker(allSchedule(nameDuty2, dej2))
-						pht2.Caption = nameDuty2 + " - Дежурный ОИХО"
-						if _, err := bot.Send(pht2); err != nil {
 							log.Panic(err)
 						}
 					} else
-					if str := text; (len(text) >= 19) && (str[len(str)-17:len(str)] == "Ночная 🌚") {
-						selDay := strings.Trim(text, " Ночная 🌚")
-						fmt.Println(selDay)
-						strDate := selDay + time.Now().Local().Format(" 1 2006 ") + "22:00"
-						fmt.Println(strDate)
-						calDate, _ := time.Parse(timeTempl, strDate+" (MSK)")
-						nameDuty1 := whoDuty(calDate, dej1)
-						pht1 := tgbotapi.NewPhoto(update.Message.Chat.ID, fncs.GetPathImg(nameDuty1))
-						pht1.ReplyMarkup = kbrd.InlineKeyboardMaker(allSchedule(nameDuty1, dej1))
-						pht1.Caption = nameDuty1 + " - Дежурный ООЭ АСУ"
-						if _, err := bot.Send(pht1); err != nil {
+					if inDept, _ := fncs.StrInArray(dej.getListDept(), text); inDept {
+						msg := tgbotapi.NewMessage(update.Message.Chat.ID, text)
+						msg.ReplyMarkup = kbrd.GetListDuty(dej.getListDuty(text))
+						if _, err := bot.Send(msg); err != nil {
 							log.Panic(err)
 						}
-						nameDuty2 := whoDuty(calDate, dej2)
-						pht2 := tgbotapi.NewPhoto(update.Message.Chat.ID, fncs.GetPathImg(nameDuty2))
-						pht2.ReplyMarkup = kbrd.InlineKeyboardMaker(allSchedule(nameDuty2, dej2))
-						pht2.Caption = nameDuty2 + " - Дежурный ОИХО"
-						if _, err := bot.Send(pht2); err != nil {
+					} else
+					if fncs.IfStrDay(text) {
+						msg := tgbotapi.NewMessage(update.Message.Chat.ID, "День/Ночь")
+						msg.ReplyMarkup = kbrd.GetMenuDayNight(s.Trim(text, "-"))
+						if _, err := bot.Send(msg); err != nil {
 							log.Panic(err)
+						}
+					} else
+					if s.HasSuffix(text, "Дневная 🌝") || s.HasSuffix(text, "Ночная 🌚") {
+						selDate := time.Time{}
+						if s.HasSuffix(text, "Дневная 🌝") {
+							selDay := s.Trim(text, " Дневная 🌝")
+							strDate := selDay + time.Now().Local().Format(" 1 2006 ") + "15:00"
+							selDate, _ = time.Parse(timeTempl, strDate+" (MSK)")
+						} else {
+							selDay := s.Trim(text, " Ночная 🌚")
+							strDate := selDay + time.Now().Local().Format(" 1 2006 ") + "22:00"
+							selDate, _ = time.Parse(timeTempl, strDate+" (MSK)")
+						}
+
+						for _, nameDuty := range dej.whoDutyAll(selDate) {
+							pht := tgbotapi.NewPhoto(update.Message.Chat.ID, fncs.GetPathImg(nameDuty))
+							pht.ReplyMarkup = kbrd.InlineKeyboardMaker(dej.getSchedule(nameDuty))
+							pht.Caption = nameDuty + " - Дежурный " + dej.dutyToDept(nameDuty)
+							if _, err := bot.Send(pht); err != nil {
+								log.Panic(err)
+							}
 						}
 					} else
 					{
@@ -312,9 +348,9 @@ func telegramBot(dej1, dej2 []dejurniy) {
 }
 
 func main() {
-	dej1 := readXLSX("june.xlsx")
-	dej2 := readXLSX("june2.xlsx")
+	dej := dejurnie{}
+	dej.readXLSX()
 
 	//Вызываем бота
-	telegramBot(dej1, dej2)
+	telegramBot(dej)
 }

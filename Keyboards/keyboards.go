@@ -22,7 +22,7 @@ var (
 
 	MenuLevel12 = tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("ООЭ АСУ"),
+			tgbotapi.NewKeyboardButton("ООЭАСУ"),
 		),
 		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton("ОИХО"),
