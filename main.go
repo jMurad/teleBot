@@ -187,8 +187,8 @@ func (d *dejurnie) dutyToDept(dutyName string) string {
 
 func (d *dejurnie) getSchedule(dutyName string) [31]string {
 	var schedules [31]string
-	for i, dept := range d.dept {
-		for _, dn := range dept.dutyName {
+	for _, dept := range d.dept {
+		for i, dn := range dept.dutyName {
 			if dn == dutyName {
 				for j, rsp := range dept.drasp[i] {
 					if rsp.begin.IsZero() != true {
