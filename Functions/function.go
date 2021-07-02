@@ -1,6 +1,7 @@
 package Functions
 
 import (
+	"io/ioutil"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -103,4 +104,12 @@ func TripDept(nameDept string) string {
 		}
 	}
 	return strNew
+}
+
+func GetAPIToken() string {
+	data, err := ioutil.ReadFile("config.cfg")
+	if err != nil {
+		panic(err)
+	}
+	return string(data)
 }

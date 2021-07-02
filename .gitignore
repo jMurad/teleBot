@@ -1,0 +1,4 @@
+config.cfg
+note.txt
+*.xlsx
+.gitignore

@@ -210,9 +210,9 @@ func (d *dejurnie) getSchedule(dutyName string) [31]string {
 	return schedules
 }
 
-func telegramBot(dej dejurnie) {
+func telegramBot(dej dejurnie, token string) {
 	//Создаем бота
-	bot, err := tgbotapi.NewBotAPI("")
+	bot, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
 		panic(err)
 	}
@@ -352,7 +352,7 @@ func telegramBot(dej dejurnie) {
 func main() {
 	dej := dejurnie{}
 	dej.readXLSX()
-
+	token := fncs.GetAPIToken()
 	//Вызываем бота
-	telegramBot(dej)
+	telegramBot(dej, token)
 }
