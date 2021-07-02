@@ -2,3 +2,5 @@ config.cfg
 note.txt
 *.xlsx
 .gitignore
+.idea
+photo/
