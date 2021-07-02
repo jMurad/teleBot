@@ -7,31 +7,27 @@ import (
 	"time"
 )
 
-var (
-	MenuLevel1 = tgbotapi.NewReplyKeyboard(
-		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("Кто сейчас на смене?"),
-		),
-		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("Дежурные"),
-		),
-		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("Календарь"),
-		),
-	)
 
-	MenuLevel12 = tgbotapi.NewReplyKeyboard(
-		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("ООЭАСУ"),
-		),
-		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("ОИХО"),
-		),
-		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("<  Назад"),
-		),
-	)
+var	MainMenu = tgbotapi.NewReplyKeyboard(
+	tgbotapi.NewKeyboardButtonRow(
+		tgbotapi.NewKeyboardButton("Кто сейчас на смене?"),
+	),
+	tgbotapi.NewKeyboardButtonRow(
+		tgbotapi.NewKeyboardButton("Дежурные"),
+	),
+	tgbotapi.NewKeyboardButtonRow(
+		tgbotapi.NewKeyboardButton("Календарь"),
+	),
 )
+
+func GetListDept(dept []string) tgbotapi.ReplyKeyboardMarkup{
+	var keyboard [][]tgbotapi.KeyboardButton
+	for _, ld := range dept {
+		keyboard = append(keyboard, tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton(ld)))
+	}
+	keyboard = append(keyboard, tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton("<  Назад")))
+	return tgbotapi.NewReplyKeyboard(keyboard...)
+}
 
 func GetMenuDayNight(day string) tgbotapi.ReplyKeyboardMarkup {
 	menuDayNight := tgbotapi.NewReplyKeyboard(

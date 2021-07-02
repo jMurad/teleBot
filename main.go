@@ -204,7 +204,7 @@ func (d *dejurnie) getSchedule(dutyName string) [31]string {
 						}
 					}
 				}
-		}
+			}
 		}
 	}
 	return schedules
@@ -216,6 +216,8 @@ func telegramBot(dej dejurnie) {
 	if err != nil {
 		panic(err)
 	}
+
+	listDept := dej.getListDept()
 
 	//Устанавливаем время обновления
 	u := tgbotapi.NewUpdate(0)
@@ -232,7 +234,7 @@ func telegramBot(dej dejurnie) {
 				switch text {
 				case "/start":
 					msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Ассалам алейкум! Я скажу тебе кто сейчас на смене!")
-					msg.ReplyMarkup = kbrd.MenuLevel1
+					msg.ReplyMarkup = kbrd.MainMenu
 					if _, err := bot.Send(msg); err != nil {
 						log.Panic(err)
 					}
@@ -249,7 +251,7 @@ func telegramBot(dej dejurnie) {
 					}
 				case "Дежурные":
 					msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Дежурные")
-					msg.ReplyMarkup = kbrd.MenuLevel12
+					msg.ReplyMarkup = kbrd.GetListDept(listDept)
 					if _, err := bot.Send(msg); err != nil {
 						log.Panic(err)
 					}
@@ -267,13 +269,13 @@ func telegramBot(dej dejurnie) {
 					}
 				case "< Назад":
 					msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Дежурные")
-					msg.ReplyMarkup = kbrd.MenuLevel12
+					msg.ReplyMarkup = kbrd.GetListDept(listDept)
 					if _, err := bot.Send(msg); err != nil {
 						log.Panic(err)
 					}
 				case "<  Назад":
 					msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Меню")
-					msg.ReplyMarkup = kbrd.MenuLevel1
+					msg.ReplyMarkup = kbrd.MainMenu
 					if _, err := bot.Send(msg); err != nil {
 						log.Panic(err)
 					}
@@ -286,7 +288,7 @@ func telegramBot(dej dejurnie) {
 							log.Panic(err)
 						}
 					} else
-					if inDept, _ := fncs.StrInArray(dej.getListDept(), text); inDept {
+					if inDept, _ := fncs.StrInArray(listDept, text); inDept {
 						msg := tgbotapi.NewMessage(update.Message.Chat.ID, text)
 						msg.ReplyMarkup = kbrd.GetListDuty(dej.getListDuty(text))
 						if _, err := bot.Send(msg); err != nil {
@@ -324,7 +326,7 @@ func telegramBot(dej dejurnie) {
 					{
 						//Отправлем сообщение
 						msg := tgbotapi.NewMessage(update.Message.Chat.ID, fncs.RandomRustam())
-						msg.ReplyMarkup = kbrd.MenuLevel1
+						msg.ReplyMarkup = kbrd.MainMenu
 						if _, err := bot.Send(msg); err != nil {
 							log.Panic(err)
 						}
@@ -333,7 +335,7 @@ func telegramBot(dej dejurnie) {
 			} else {
 				//Отправлем сообщение
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, fncs.RandomRustam())
-				msg.ReplyMarkup = kbrd.MenuLevel1
+				msg.ReplyMarkup = kbrd.MainMenu
 				if _, err := bot.Send(msg); err != nil {
 					log.Panic(err)
 				}
