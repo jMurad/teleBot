@@ -6,6 +6,7 @@ import (
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"log"
+	"net/http"
 	"path/filepath"
 	"reflect"
 	"strconv"
@@ -224,7 +225,10 @@ func telegramBot(dej dejurnie, token string) {
 	u.Timeout = 60
 
 	//Получаем обновления от бота
-	updates := bot.GetUpdatesChan(u)
+	updates := bot.ListenForWebhook("/" + bot.Token)
+
+	//Слушаем Telegram
+	go http.ListenAndServeTLS("0.0.0.0:8443", "self_sign_cert.pem", "self_sign_cert", nil)
 
 	for update := range updates {
 		if update.Message != nil {
