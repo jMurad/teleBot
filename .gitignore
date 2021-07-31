@@ -7,3 +7,4 @@ photo/
 self_sign_cert
 self_sign_cert.pem
 *.html
+*_test.go
