@@ -142,6 +142,10 @@ func (d *dejurnie) findXLSX() {
 }
 
 func (d *dejurnie) cronXLSX()  {
+	runningParse = true
+	d.findXLSX()
+	runningParse = false
+
 	c := time.Tick(60 * time.Minute)
 	for range c {
 		runningParse = true
