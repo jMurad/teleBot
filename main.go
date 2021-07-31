@@ -229,10 +229,6 @@ func (d *dejurnie) getSchedule(dutyName string) [31]string {
 }
 
 func cronXLSX(dej dejurnie)  {
-	runningParse = true
-	dej.findXLSX()
-	runningParse = false
-
 	c := time.Tick(60 * time.Minute)
 	for range c {
 		runningParse = true
@@ -386,6 +382,7 @@ func telegramBot(dej dejurnie, token string) {
 
 func main() {
 	dej := dejurnie{}
+	dej.findXLSX()
 	go cronXLSX(dej)
 	token := fncs.GetAPIToken()
 	//Вызываем бота
