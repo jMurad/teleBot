@@ -141,19 +141,6 @@ func (d *dejurnie) findXLSX() {
 	}
 }
 
-func (d *dejurnie) cronXLSX()  {
-	runningParse = true
-	d.findXLSX()
-	runningParse = false
-
-	c := time.Tick(60 * time.Minute)
-	for range c {
-		runningParse = true
-		d.findXLSX()
-		runningParse = false
-	}
-}
-
 func (d *dejurnie) getListDept() []string {
 	var listDept []string
 	for _, dn := range d.deptName {
@@ -239,6 +226,19 @@ func (d *dejurnie) getSchedule(dutyName string) [31]string {
 		}
 	}
 	return schedules
+}
+
+func cronXLSX(dej dejurnie)  {
+	runningParse = true
+	dej.findXLSX()
+	runningParse = false
+
+	c := time.Tick(60 * time.Minute)
+	for range c {
+		runningParse = true
+		dej.findXLSX()
+		runningParse = false
+	}
 }
 
 func telegramBot(dej dejurnie, token string) {
@@ -386,7 +386,7 @@ func telegramBot(dej dejurnie, token string) {
 
 func main() {
 	dej := dejurnie{}
-	go dej.cronXLSX()
+	go cronXLSX(dej)
 	token := fncs.GetAPIToken()
 	//Вызываем бота
 	telegramBot(dej, token)
