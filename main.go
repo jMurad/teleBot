@@ -33,7 +33,7 @@ type rasp [31]struct {
 
 var runningParse bool = false
 
-func (d *dejurnie) parseXLSX(fpath string, num int, flag chan int) {
+func (d *dejurnie) parseXLSX(fpath string, num int) {
 	var (
 		month,year string
 		MONTH = map[string]string{
@@ -114,7 +114,6 @@ func (d *dejurnie) parseXLSX(fpath string, num int, flag chan int) {
 			}
 		}
 	}
-	flag <- 1
 }
 
 func (d *dejurnie) findXLSX() {
@@ -124,20 +123,10 @@ func (d *dejurnie) findXLSX() {
 	if err != nil {
 		panic(err)
 	}
-	c := make(chan int)
-
-	// Инициализация переменных пустыми значениями
-	d.deptName = []string{}
-	d.dept = []department{}
 
 	// Проходимся по всем файлам XLSX
 	for num, fpath := range files {
-		go d.parseXLSX(fpath, num, c)
-	}
-
-	// Ловим каналы
-	for range files {
-		<- c
+		d.parseXLSX(fpath, num)
 	}
 }
 
@@ -232,6 +221,9 @@ func cronXLSX(dej dejurnie)  {
 	c := time.Tick(60 * time.Minute)
 	for range c {
 		runningParse = true
+		// Инициализация переменных пустыми значениями
+		dej.deptName = []string{}
+		dej.dept = []department{}
 		dej.findXLSX()
 		runningParse = false
 	}
