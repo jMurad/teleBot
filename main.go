@@ -3,6 +3,7 @@ package main
 import (
 	fncs "TeleBot/Functions"
 	kbrd "TeleBot/Keyboards"
+	"fmt"
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"log"
@@ -31,7 +32,10 @@ type rasp [31]struct {
 	end		time.Time
 }
 
-var runningParse bool = false
+var (
+	runningParse bool = false
+	dej dejurnie = dejurnie{}
+)
 
 func (d *dejurnie) parseXLSX(fpath string, num int) {
 	var (
@@ -217,15 +221,18 @@ func (d *dejurnie) getSchedule(dutyName string) [31]string {
 	return schedules
 }
 
-func cronXLSX(dej dejurnie)  {
+func (d *dejurnie) cronXLSX(flag chan dejurnie)  {
 	c := time.Tick(60 * time.Minute)
 	for range c {
 		runningParse = true
+		fmt.Println(":::cronXLSX -> run")
 		// Инициализация переменных пустыми значениями
-		dej.deptName = []string{}
-		dej.dept = []department{}
-		dej.findXLSX()
+		d.deptName = []string{}
+		d.dept = []department{}
+		d.findXLSX()
 		runningParse = false
+		fmt.Println(":::cronXLSX -> stop")
+		flag <- *d
 	}
 }
 
@@ -243,11 +250,15 @@ func telegramBot(dej dejurnie, token string) {
 	//Получаем обновления от бота
 	updates := bot.ListenForWebhook("/" + bot.Token)
 
+	newdej := make(chan dejurnie)
+	go dej.cronXLSX(newdej)
+
 	//Слушаем Telegram
 	go http.ListenAndServeTLS("0.0.0.0:8443", "self_sign_cert.pem", "self_sign_cert", nil)
 
 	for update := range updates {
 		if !runningParse {
+			fmt.Println(":::telegram -> run")
 			listDept := dej.getListDept()
 			if update.Message != nil {
 				text := update.Message.Text
@@ -368,14 +379,15 @@ func telegramBot(dej dejurnie, token string) {
 					panic(err)
 				}
 			}
+		} else {
+			dej = <- newdej
+			fmt.Println(":::telegram -> pause")
 		}
 	}
 }
 
 func main() {
-	dej := dejurnie{}
 	dej.findXLSX()
-	go cronXLSX(dej)
 	token := fncs.GetAPIToken()
 	//Вызываем бота
 	telegramBot(dej, token)
