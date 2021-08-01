@@ -9,3 +9,4 @@ self_sign_cert.pem
 *.html
 *_test.go
 *nohup*
+main
