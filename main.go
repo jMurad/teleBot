@@ -3,7 +3,6 @@ package main
 import (
 	fncs "TeleBot/Functions"
 	kbrd "TeleBot/Keyboards"
-	"fmt"
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"log"
@@ -225,13 +224,11 @@ func (d *dejurnie) cronXLSX(flag chan dejurnie)  {
 	c := time.Tick(60 * time.Minute)
 	for range c {
 		runningParse = true
-		fmt.Println(":::cronXLSX -> run")
 		// Инициализация переменных пустыми значениями
 		d.deptName = []string{}
 		d.dept = []department{}
 		d.findXLSX()
 		runningParse = false
-		fmt.Println(":::cronXLSX -> stop")
 		flag <- *d
 	}
 }
@@ -258,7 +255,6 @@ func telegramBot(dej dejurnie, token string) {
 
 	for update := range updates {
 		if !runningParse {
-			fmt.Println(":::telegram -> run")
 			listDept := dej.getListDept()
 			if update.Message != nil {
 				text := update.Message.Text
@@ -381,7 +377,6 @@ func telegramBot(dej dejurnie, token string) {
 			}
 		} else {
 			dej = <- newdej
-			fmt.Println(":::telegram -> pause")
 		}
 	}
 }
