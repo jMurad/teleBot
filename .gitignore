@@ -1,4 +1,4 @@
-config.cfg
+.env
 note.txt
 *.xlsx
 .gitignore
@@ -10,3 +10,4 @@ self_sign_cert.pem
 *_test.go
 *nohup*
 main
+.env

@@ -16,24 +16,21 @@ func LastDayOfMonth(date time.Time) int {
 }
 
 func IfStrDay(strDay string) bool {
-	if strDay[0] == '-' && strDay[len(strDay)-1] == '-' {
-		num, _ := strconv.Atoi(strings.Trim(strDay, "-"))
-		for i := 1; i <= LastDayOfMonth(time.Now().Local()); i++ {
-			if i == num {
-				return true
-			}
-		}
+	num, _ := strconv.Atoi(strings.Trim(strDay, "-"))
+	if 1 <= num && num <= LastDayOfMonth(time.Now().Local()) {
+		return true
+	} else {
+		return false
 	}
-	return false
 }
 
-func StrInArray(s []string, e string) (bool, int) {
+func StrInArray(s []string, e string) int {
 	for i, a := range s {
 		if a == e {
-			return true, i
+			return i
 		}
 	}
-	return false, -1
+	return -1
 }
 
 func GetPathImg(name string) string {
@@ -107,7 +104,7 @@ func TripDept(nameDept string) string {
 }
 
 func GetAPIToken() string {
-	data, err := ioutil.ReadFile("config.cfg")
+	data, err := ioutil.ReadFile(".env")
 	if err != nil {
 		panic(err)
 	}

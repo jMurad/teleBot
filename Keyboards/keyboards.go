@@ -25,7 +25,7 @@ func GetListDept(dept []string) tgbotapi.ReplyKeyboardMarkup{
 	for _, ld := range dept {
 		keyboard = append(keyboard, tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton(ld)))
 	}
-	keyboard = append(keyboard, tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton("<  Назад")))
+	keyboard = append(keyboard, tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton("Назад")))
 	return tgbotapi.NewReplyKeyboard(keyboard...)
 }
 
@@ -38,7 +38,7 @@ func GetMenuDayNight(day string) tgbotapi.ReplyKeyboardMarkup {
 			tgbotapi.NewKeyboardButton(day+" Ночная 🌚"),
 		),
 		tgbotapi.NewKeyboardButtonRow(
-			tgbotapi.NewKeyboardButton("<- Назад"),
+			tgbotapi.NewKeyboardButton("Назад"),
 		),
 	)
 	return menuDayNight
@@ -80,9 +80,9 @@ func CalendarKeyboardMaker() tgbotapi.ReplyKeyboardMarkup {
 	fncs.LastDayOfMonth(time.Now())
 	for day := 1; day <= ld; day++ {
 		i += 1
-		text := "-"+strconv.Itoa(day)+"-"
+		text := strconv.Itoa(day)
 		row = append(row, tgbotapi.NewKeyboardButton(text))
-		if i > 6 {
+		if i > 7 {
 			i = 0
 			keyboard = append(keyboard, row)
 			row = []tgbotapi.KeyboardButton{}
@@ -90,15 +90,22 @@ func CalendarKeyboardMaker() tgbotapi.ReplyKeyboardMarkup {
 	}
 	keyboard = append(keyboard, row)
 	row = []tgbotapi.KeyboardButton{}
-	keyboard = append(keyboard, tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton("<  Назад")))
+	keyboard = append(keyboard, tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton("Назад")))
 	return tgbotapi.NewReplyKeyboard(keyboard...)
 }
 
 func GetListDuty(listDuty []string) tgbotapi.ReplyKeyboardMarkup {
+	var row []tgbotapi.KeyboardButton
 	var keyboard [][]tgbotapi.KeyboardButton
-	for _, ld := range listDuty {
-		keyboard = append(keyboard, tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton(ld)))
+	for i, ld := range listDuty {
+		row = append(row, tgbotapi.NewKeyboardButton(ld))
+		if (i+1) % 2 == 0 {
+			keyboard = append(keyboard, row)
+			row = []tgbotapi.KeyboardButton{}
+		}
+		//keyboard = append(keyboard, tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton(ld)))
 	}
-	keyboard = append(keyboard, tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton("< Назад")))
+	keyboard = append(keyboard, row)
+	keyboard = append(keyboard, tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton("Назад")))
 	return tgbotapi.NewReplyKeyboard(keyboard...)
 }
