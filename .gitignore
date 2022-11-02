@@ -1,7 +1,7 @@
 .env
 note.txt
 *.xlsx
-.gitignore
+*.gitignore
 .idea
 photo/
 self_sign_cert
@@ -11,3 +11,6 @@ self_sign_cert.pem
 *nohup*
 main
 .env
+*.txt
+*.key
+*.pem

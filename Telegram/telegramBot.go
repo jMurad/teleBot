@@ -5,14 +5,16 @@ import (
 	"TeleBot/Duty"
 	fncs "TeleBot/Functions"
 	kbrd "TeleBot/Keyboards"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"log"
+	"net/http"
 	"os"
 	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
 var db dbpg.DatabasePG
@@ -33,14 +35,14 @@ func TeleBot(dej *Duty.Dejurnie) {
 	u.Timeout = 60
 
 	//Получаем обновления от бота
-	//updates := bot.ListenForWebhook("/" + bot.Token)
-	updates := bot.GetUpdatesChan(u)
+	updates := bot.ListenForWebhook("/" + bot.Token)
+	// updates := bot.GetUpdatesChan(u)
 
 	newdej := make(chan Duty.Dejurnie)
 	go dej.CronXLSX(newdej)
 
 	//Слушаем Telegram
-	//go http.ListenAndServeTLS("0.0.0.0:8443", "self_sign_cert.pem", "self_sign_cert", nil)
+	go http.ListenAndServeTLS("176.124.209.183:8443", "SELF_SIGN_CERT.pem", "SELF_SIGN_CERT.key", nil)
 
 	reNumber := regexp.MustCompile(`^\d\d?`)
 	reCalendarDay := regexp.MustCompile(`^\d\d? Дневная \x{1F31D}`)
@@ -99,7 +101,8 @@ func TeleBot(dej *Duty.Dejurnie) {
 						today := time.Now().Local()
 
 						for _, nameDuty := range dej.WhoDutyAll(today) {
-							pht := tgbotapi.NewPhoto(update.Message.Chat.ID, fncs.GetPathImg(nameDuty))
+							gpi := fncs.GetPathImg(nameDuty)
+							pht := tgbotapi.NewPhoto(update.Message.Chat.ID, gpi)
 							pht.ReplyMarkup = kbrd.InlineKeyboardMaker(dej.GetSchedule(nameDuty))
 							pht.Caption = nameDuty + " - Дежурный " + dej.DutyToDept(nameDuty)
 							if _, err := bot.Send(pht); err != nil {
@@ -148,10 +151,12 @@ func TeleBot(dej *Duty.Dejurnie) {
 					case reCalendar.MatchString(text):
 						var selDate time.Time
 						selDay, _ := strconv.Atoi(reNumber.FindString(text))
+						year := time.Now().Local().Format("2006")
+						month := time.Now().Local().Format("1")
 						if reCalendarDay.MatchString(text) {
-							selDate = time.Date(2021, time.September, selDay, 15, 00, 0, 0, time.Local)
+							selDate = time.Date(year, month, selDay, 15, 00, 0, 0, time.Local)
 						} else if reCalendarNight.MatchString(text) {
-							selDate = time.Date(2021, time.September, selDay, 22, 00, 0, 0, time.Local)
+							selDate = time.Date(year, month, selDay, 22, 00, 0, 0, time.Local)
 						}
 
 						for _, nameDuty := range dej.WhoDutyAll(selDate) {

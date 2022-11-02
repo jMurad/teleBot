@@ -1,13 +1,13 @@
 package Functions
 
 import (
-	"io/ioutil"
 	"math/rand"
 	"strconv"
 	"strings"
 	"time"
 )
 
+// Число последнего дня месяца или сколько в месяце дней
 func LastDayOfMonth(date time.Time) int {
 	firstDay := time.Date(date.Year(), date.Month(), 1, 0, 0, 0, 0, time.Local)
 	lastDay := firstDay.AddDate(0, 1, 0).Add(time.Nanosecond * -1).Format("2")
@@ -15,6 +15,7 @@ func LastDayOfMonth(date time.Time) int {
 	return lastDayInt
 }
 
+// Находится ли число в пределах месяца от 1 до 30 или 31
 func IfStrDay(strDay string) bool {
 	num, _ := strconv.Atoi(strings.Trim(strDay, "-"))
 	if 1 <= num && num <= LastDayOfMonth(time.Now().Local()) {
@@ -24,6 +25,7 @@ func IfStrDay(strDay string) bool {
 	}
 }
 
+// Есть ли строка в массиве, если да то вывести порядковый номер
 func StrInArray(s []string, e string) int {
 	for i, a := range s {
 		if a == e {
@@ -33,6 +35,7 @@ func StrInArray(s []string, e string) int {
 	return -1
 }
 
+// Получить путь к файлу фотографии
 func GetPathImg(name string) string {
 	var imgfile string
 	switch name {
@@ -62,6 +65,7 @@ func GetPathImg(name string) string {
 	return imgfile
 }
 
+// Выдает случайные фразы Рустама
 func RandomRustam() string {
 	//rand.Seed(time.Now().UnixNano())
 	rand.Seed(time.Now().UnixNano())
@@ -91,6 +95,7 @@ func RandomRustam() string {
 	return msg[rnd]
 }
 
+// Составляет абревиатуру из первых букв всех слов
 func TripDept(nameDept string) string {
 	strNew := ""
 	for i, str := range strings.ToUpper(nameDept) {
@@ -101,12 +106,4 @@ func TripDept(nameDept string) string {
 		}
 	}
 	return strNew
-}
-
-func GetAPIToken() string {
-	data, err := ioutil.ReadFile(".env")
-	if err != nil {
-		panic(err)
-	}
-	return string(data)
 }
