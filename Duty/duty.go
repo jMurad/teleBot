@@ -113,52 +113,6 @@ func (d *Dejurnie) ParseXLSX(fpath string, num int) {
 		raspDuty = rasp{}
 
 	}
-
-	// Проходимся по всем строкам страницы TDSheet
-	// for i, row := range rows {
-	// 	// Проходимся по всем столбцам строки
-	// 	for j, colCell := range row {
-	// 		// Извлекаем название Месяца
-	// 		if i == 4 && j == 17 {
-	// 			month = MONTH[colCell]
-	// 		}
-
-	// 		// Извлекаем Год
-	// 		if i == 4 && j == 21 {
-	// 			year = colCell
-	// 		}
-
-	// 		// Извлекаем название Отдела
-	// 		if i == 4 && j == 5 {
-	// 			d.DeptNames[num] = fncs.TripDept(colCell)
-	// 		}
-
-	// 		// Извлекаем Имя дежурного
-	// 		if i >= 12 && i%4 == 0 && j == 1 && i <= len(rows)-2 {
-	// 			d.Depts[num].DutyNames = append(d.Depts[num].DutyNames, colCell)
-	// 		}
-
-	// 		// Извлекаем Время начала и конца смены
-	// 		if j >= 4 && i >= 12 && i <= len(rows)-2 && s.Contains(colCell, ":") {
-	// 			if i%2 == 0 {
-	// 				beginDate := strconv.Itoa(j-3) + " " + month + " " + year + " " + colCell + " (MSK)"
-	// 				raspDuty[j-4].Begin, _ = time.Parse(timeTempl, beginDate)
-	// 			} else {
-	// 				if colCell == "24:00" {
-	// 					colCell = "23:59"
-	// 				}
-	// 				endDate := strconv.Itoa(j-3) + " " + month + " " + year + " " + colCell + " (MSK)"
-	// 				raspDuty[j-4].End, _ = time.Parse(timeTempl, endDate)
-	// 			}
-	// 		}
-
-	// 		// Добавляем дежурного в список
-	// 		if i >= 12 && (i+1)%4 == 0 && j == len(rows[12])-1 {
-	// 			d.Depts[num].Drasp = append(d.Depts[num].Drasp, raspDuty)
-	// 			raspDuty = rasp{}
-	// 		}
-	// 	}
-	// }
 }
 
 func (d *Dejurnie) CronXLSX(flag chan Dejurnie) {
