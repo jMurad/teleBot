@@ -74,7 +74,7 @@ func (d *Dejurnie) ParseXLSX(fpath string, num int) {
 	raspDuty := rasp{}
 
 	beginDate, endDate := "", ""
-	month = time.Now().Local().Format("1") // MONTH[rows[4][17]]
+	month = time.Now().Local().Format("1")
 	year = time.Now().Local().Format("2006")
 	d.DeptNames[num] = fncs.TripDept(rows[4][5])
 	for ii := 12; ii < len(rows)-2; ii += 4 {

@@ -73,7 +73,7 @@ func TeleBot(dej *Duty.Dejurnie) {
 								break
 							}
 							if i+lenReport >= len(report) {
-								msg := tgbotapi.NewMessage(update.Message.Chat.ID, report[i:len(report)])
+								msg := tgbotapi.NewMessage(update.Message.Chat.ID, report[i:])
 								msg.ParseMode = "Markdown"
 								msg.ReplyMarkup = kbrd.MainMenu
 								if _, err := bot.Send(msg); err != nil {
@@ -151,8 +151,8 @@ func TeleBot(dej *Duty.Dejurnie) {
 					case reCalendar.MatchString(text):
 						var selDate time.Time
 						selDay, _ := strconv.Atoi(reNumber.FindString(text))
-						year := time.Now().Local().Format("2006")
-						month := time.Now().Local().Format("1")
+						year := time.Now().Local().Year()
+						month := time.Now().Local().Month()
 						if reCalendarDay.MatchString(text) {
 							selDate = time.Date(year, month, selDay, 15, 00, 0, 0, time.Local)
 						} else if reCalendarNight.MatchString(text) {
