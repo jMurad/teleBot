@@ -2,6 +2,9 @@ package Duty
 
 import (
 	fncs "TeleBot/Functions"
+	"encoding/json"
+	"fmt"
+
 	// "encoding/json"
 	// "fmt"
 	"path/filepath"
@@ -25,6 +28,7 @@ type department struct {
 type rasp [31]struct {
 	Begin time.Time
 	End   time.Time
+	Test  string
 }
 
 var RunningParse bool = false
@@ -44,12 +48,12 @@ func (d *Dejurnie) FindXLSX() {
 		d.ParseXLSX(fpath, num)
 	}
 
-	// b, err := json.Marshal(d)
-	// if err != nil {
-	// 	fmt.Printf("Error: %s", err)
-	// 	return
-	// }
-	// fmt.Println("|" + string(b) + "|")
+	b, err := json.Marshal(d)
+	if err != nil {
+		fmt.Printf("Error: %s", err)
+		return
+	}
+	fmt.Println("|" + string(b) + "|")
 }
 
 func (d *Dejurnie) ParseXLSX(fpath string, num int) {
@@ -80,20 +84,29 @@ func (d *Dejurnie) ParseXLSX(fpath string, num int) {
 	for ii := 12; ii < len(rows)-2; ii += 4 {
 		d.Depts[num].DutyNames = append(d.Depts[num].DutyNames, rows[ii][1])
 		for jj := 4; jj <= 34; jj++ {
+			strRow := ""
 			if s.Contains(rows[ii][jj], ":") {
 				beginDate = strconv.Itoa(jj-3) + " " + month + " " + year + " " + rows[ii][jj] + " (MSK)"
 				raspDuty[jj-4].Begin, _ = time.Parse(timeTempl, beginDate)
+				strRow += " $ " + rows[ii][jj]
 			} else if s.Contains(rows[ii+2][jj], ":") {
 				beginDate = strconv.Itoa(jj-3) + " " + month + " " + year + " " + rows[ii+2][jj] + " (MSK)"
 				raspDuty[jj-4].Begin, _ = time.Parse(timeTempl, beginDate)
+				strRow += " $$ " + rows[ii+2][jj]
 			}
 			if s.Contains(rows[ii+1][jj], ":") {
 				endDate = strconv.Itoa(jj-3) + " " + month + " " + year + " " + rows[ii+1][jj] + " (MSK)"
 				raspDuty[jj-4].End, _ = time.Parse(timeTempl, endDate)
+				strRow += " # " + rows[ii+1][jj]
 			} else if s.Contains(rows[ii+3][jj], ":") {
+				if rows[ii+3][jj] == "24:00" {
+					rows[ii+3][jj] = "23:59"
+				}
 				endDate = strconv.Itoa(jj-3) + " " + month + " " + year + " " + rows[ii+3][jj] + " (MSK)"
 				raspDuty[jj-4].End, _ = time.Parse(timeTempl, endDate)
+				strRow += " ## " + rows[ii+3][jj]
 			}
+			raspDuty[jj-4].Test = strRow
 		}
 
 		d.Depts[num].Drasp = append(d.Depts[num].Drasp, raspDuty)
