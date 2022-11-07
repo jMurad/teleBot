@@ -2,11 +2,7 @@ package Duty
 
 import (
 	fncs "TeleBot/Functions"
-	"encoding/json"
 	"fmt"
-
-	// "encoding/json"
-	// "fmt"
 	"path/filepath"
 	"strconv"
 	s "strings"
@@ -36,9 +32,10 @@ var RunningParse bool = false
 const timeTempl = "2 1 2006 15:04 (MST)"
 
 func (d *Dejurnie) FindXLSX() {
+	fmt.Println("FindXLSX")
 	// Ищем все XLSX файлы с названием текущего месяца
 	t := time.Now().Local().Format("January")
-	files, err := filepath.Glob(s.ToLower(t) + "*.xlsx")
+	files, err := filepath.Glob("./schedules/" + s.ToLower(t) + "*.xlsx")
 	if err != nil {
 		panic(err)
 	}
@@ -48,15 +45,16 @@ func (d *Dejurnie) FindXLSX() {
 		d.ParseXLSX(fpath, num)
 	}
 
-	b, err := json.Marshal(d)
-	if err != nil {
-		fmt.Printf("Error: %s", err)
-		return
-	}
-	fmt.Println("|" + string(b) + "|")
+	// b, err := json.Marshal(d)
+	// if err != nil {
+	// 	fmt.Printf("Error: %s", err)
+	// 	return
+	// }
+	// fmt.Println("|" + string(b) + "|")
 }
 
 func (d *Dejurnie) ParseXLSX(fpath string, num int) {
+	fmt.Println("ParseXLSX")
 	var month, year string
 
 	d.DeptNames = append(d.DeptNames, "")
@@ -116,6 +114,7 @@ func (d *Dejurnie) ParseXLSX(fpath string, num int) {
 }
 
 func (d *Dejurnie) CronXLSX(flag chan Dejurnie) {
+	fmt.Println("CronXLSX")
 	c := time.Tick(60 * time.Minute)
 	for range c {
 		RunningParse = true
@@ -129,6 +128,7 @@ func (d *Dejurnie) CronXLSX(flag chan Dejurnie) {
 }
 
 func (d *Dejurnie) GetSchedule(dutyName string) [31]string {
+	fmt.Println("GetSchedule")
 	var schedules [31]string
 	for _, dept := range d.Depts {
 		for i, dn := range dept.DutyNames {

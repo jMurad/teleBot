@@ -5,6 +5,7 @@ import (
 	"TeleBot/Duty"
 	fncs "TeleBot/Functions"
 	kbrd "TeleBot/Keyboards"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -20,6 +21,7 @@ import (
 var db dbpg.DatabasePG
 
 func TeleBot(dej *Duty.Dejurnie) {
+	fmt.Println("TeleBot")
 	//Инициализация БД
 	db.DBinit()
 
@@ -34,6 +36,15 @@ func TeleBot(dej *Duty.Dejurnie) {
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 
+	info, err := bot.GetWebhookInfo()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if info.LastErrorDate != 0 {
+		log.Printf("Telegram callback failed: %s", info.LastErrorMessage)
+	}
+
 	//Получаем обновления от бота
 	updates := bot.ListenForWebhook("/" + bot.Token)
 	// updates := bot.GetUpdatesChan(u)
@@ -42,7 +53,9 @@ func TeleBot(dej *Duty.Dejurnie) {
 	go dej.CronXLSX(newdej)
 
 	//Слушаем Telegram
-	go http.ListenAndServeTLS("176.124.209.183:8443", "SELF_SIGN_CERT.pem", "SELF_SIGN_CERT.key", nil)
+	go http.ListenAndServeTLS("176.124.209.183:8443", "keys/SELF_SIGN_CERT.pem", "keys/SELF_SIGN_CERT.key", nil)
+
+	fmt.Println("next ServeTLS")
 
 	reNumber := regexp.MustCompile(`^\d\d?`)
 	reCalendarDay := regexp.MustCompile(`^\d\d? Дневная \x{1F31D}`)
@@ -54,7 +67,10 @@ func TeleBot(dej *Duty.Dejurnie) {
 		currentCalendar = false
 	)
 
+	fmt.Println(len(updates))
 	for update := range updates {
+		fmt.Println(len(updates))
+		fmt.Println("update cicle")
 		if !Duty.RunningParse {
 			listDept := dej.GetListDept()
 			if update.Message != nil {
@@ -199,7 +215,7 @@ func TeleBot(dej *Duty.Dejurnie) {
 					}
 					db.AddToLog(userId, firstName, text)
 				} else {
-					//Отправлем сообщение
+					//Отправляем сообщение
 					msg := tgbotapi.NewMessage(update.Message.Chat.ID, fncs.RandomRustam())
 					msg.ReplyMarkup = kbrd.MainMenu
 					if _, err := bot.Send(msg); err != nil {
