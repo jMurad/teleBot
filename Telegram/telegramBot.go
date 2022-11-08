@@ -1,11 +1,10 @@
 package Telegram
 
 import (
-	dbpg "TeleBot/Database"
+	dbase "TeleBot/Database"
 	"TeleBot/Duty"
 	fncs "TeleBot/Functions"
 	kbrd "TeleBot/Keyboards"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -15,28 +14,34 @@ import (
 	"strings"
 	"time"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	tgb "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-var db dbpg.DatabasePG
+type TeleBot struct {
+	Bot     *tgb.BotAPI
+	Updates tgb.UpdatesChannel
+}
 
-func TeleBot(dej *Duty.Dejurnie) {
-	fmt.Println("TeleBot")
-	//Инициализация БД
-	db.DBinit()
-
+func (tb *TeleBot) TBInit() {
 	//Создаем бота
 	token := os.Getenv("TOKEN")
-	bot, err := tgbotapi.NewBotAPI(token)
+	var err error
+	tb.Bot, err = tgb.NewBotAPI(token)
 	if err != nil {
 		panic(err)
 	}
 
-	//Устанавливаем время обновления
-	u := tgbotapi.NewUpdate(0)
-	u.Timeout = 60
+	tb.Bot.Debug = true
 
-	info, err := bot.GetWebhookInfo()
+	log.Printf("Authorized on account %s", tb.Bot.Self.UserName)
+
+	wh, _ := tgb.NewWebhookWithCert("https://88.210.3.128:8443/"+tb.Bot.Token, "keys/SELF_SIGN_CERT.pem")
+	_, err = tb.Bot.Request(wh)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	info, err := tb.Bot.GetWebhookInfo()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -46,16 +51,41 @@ func TeleBot(dej *Duty.Dejurnie) {
 	}
 
 	//Получаем обновления от бота
-	updates := bot.ListenForWebhook("/" + bot.Token)
-	// updates := bot.GetUpdatesChan(u)
+	tb.Updates = tb.Bot.ListenForWebhook("/" + tb.Bot.Token)
+}
 
-	newdej := make(chan Duty.Dejurnie)
-	go dej.CronXLSX(newdej)
-
+func (tb *TeleBot) startServer() {
 	//Слушаем Telegram
-	go http.ListenAndServeTLS("176.124.209.183:8443", "keys/SELF_SIGN_CERT.pem", "keys/SELF_SIGN_CERT.key", nil)
+	go func() {
+		err := http.ListenAndServeTLS("88.210.3.128:8443", "keys/SELF_SIGN_CERT.pem", "keys/SELF_SIGN_CERT.key", nil)
+		if err != nil {
+			log.Panic(err)
+		}
+	}()
+}
 
-	fmt.Println("next ServeTLS")
+func (tb *TeleBot) sendMsg(md bool, id int64, text string, kb interface{}) {
+	msg := tgb.NewMessage(id, text)
+	msg.ReplyMarkup = kb
+	if md {
+		msg.ParseMode = "Markdown"
+	}
+	if _, err := tb.Bot.Send(msg); err != nil {
+		log.Panic(err)
+	}
+}
+
+func (tb *TeleBot) sendPht(name string, id int64, text string, kb interface{}) {
+	pht := tgb.NewPhoto(id, fncs.GetPathImg(name))
+	pht.ReplyMarkup = kb
+	pht.Caption = text
+	if _, err := tb.Bot.Send(pht); err != nil {
+		log.Panic(err)
+	}
+}
+
+func (tb *TeleBot) RunBot(dej *Duty.Dejurnie, newdej chan Duty.Dejurnie, db *dbase.TGDB) {
+	tb.startServer()
 
 	reNumber := regexp.MustCompile(`^\d\d?`)
 	reCalendarDay := regexp.MustCompile(`^\d\d? Дневная \x{1F31D}`)
@@ -67,16 +97,15 @@ func TeleBot(dej *Duty.Dejurnie) {
 		currentCalendar = false
 	)
 
-	fmt.Println(len(updates))
-	for update := range updates {
-		fmt.Println(len(updates))
-		fmt.Println("update cicle")
+	for update := range tb.Updates {
 		if !Duty.RunningParse {
 			listDept := dej.GetListDept()
 			if update.Message != nil {
 				text := update.Message.Text
-				userId := strconv.Itoa(int(update.Message.Chat.ID))
+				id := update.Message.Chat.ID
+				userId := strconv.Itoa(int(id))
 				firstName := update.Message.Chat.FirstName
+
 				//Проверяем что от пользователья пришло именно текстовое сообщение
 				if reflect.TypeOf(text).Kind() == reflect.String && text != "" {
 					switch {
@@ -89,79 +118,39 @@ func TeleBot(dej *Duty.Dejurnie) {
 								break
 							}
 							if i+lenReport >= len(report) {
-								msg := tgbotapi.NewMessage(update.Message.Chat.ID, report[i:])
-								msg.ParseMode = "Markdown"
-								msg.ReplyMarkup = kbrd.MainMenu
-								if _, err := bot.Send(msg); err != nil {
-									log.Panic(err)
-								}
+								tb.sendMsg(true, id, report[i:], kbrd.MainMenu)
 							} else {
-								msg := tgbotapi.NewMessage(update.Message.Chat.ID, report[i:i+lenReport])
-								msg.ParseMode = "Markdown"
-								msg.ReplyMarkup = kbrd.MainMenu
-								if _, err := bot.Send(msg); err != nil {
-									log.Panic(err)
-								}
+								tb.sendMsg(true, id, report[i:i+lenReport], kbrd.MainMenu)
 							}
 							i += lenReport
-
 						}
 					case text == "/start":
-						msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Ассалам алейкум! Я скажу тебе кто сейчас на смене!")
-						msg.ReplyMarkup = kbrd.MainMenu
-						if _, err := bot.Send(msg); err != nil {
-							log.Panic(err)
-						}
+						tempText := "Ассалам алейкум! Я скажу тебе кто сейчас на смене!"
+						tb.sendMsg(false, id, tempText, kbrd.MainMenu)
 						currentCalendar = false
 					case text == "Кто сейчас на смене?":
 						today := time.Now().Local()
-
 						for _, nameDuty := range dej.WhoDutyAll(today) {
-							gpi := fncs.GetPathImg(nameDuty)
-							pht := tgbotapi.NewPhoto(update.Message.Chat.ID, gpi)
-							pht.ReplyMarkup = kbrd.InlineKeyboardMaker(dej.GetSchedule(nameDuty))
-							pht.Caption = nameDuty + " - Дежурный " + dej.DutyToDept(nameDuty)
-							if _, err := bot.Send(pht); err != nil {
-								log.Panic(err)
-							}
+							tempText := nameDuty + " - Дежурный " + dej.DutyToDept(nameDuty)
+							tb.sendPht(nameDuty, id, tempText, kbrd.InlineKeyboardMaker(dej.GetSchedule(nameDuty)))
 						}
 					case text == "Дежурные":
-						msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Дежурные")
-						msg.ReplyMarkup = kbrd.GetListDept(listDept)
-						if _, err := bot.Send(msg); err != nil {
-							log.Panic(err)
-						}
+						tb.sendMsg(false, id, "Дежурные", kbrd.GetListDept(listDept))
 						currentMenu = "Меню"
 					case text == "Календарь":
-						msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Календарь")
-						msg.ReplyMarkup = kbrd.CalendarKeyboardMaker()
-						if _, err := bot.Send(msg); err != nil {
-							log.Panic(err)
-						}
+						tb.sendMsg(false, id, "Календарь", kbrd.CalendarKeyboardMaker())
 						currentMenu = "Меню"
 						currentCalendar = true
 					case text == "Назад":
 						switch currentMenu {
 						case "Календарь":
-							msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Календарь")
-							msg.ReplyMarkup = kbrd.CalendarKeyboardMaker()
-							if _, err := bot.Send(msg); err != nil {
-								log.Panic(err)
-							}
+							tb.sendMsg(false, id, "Календарь", kbrd.CalendarKeyboardMaker())
 							currentMenu = "Меню"
 						case "Дежурные":
-							msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Дежурные")
-							msg.ReplyMarkup = kbrd.GetListDept(listDept)
-							if _, err := bot.Send(msg); err != nil {
-								log.Panic(err)
-							}
+							tb.sendMsg(false, id, "Дежурные", kbrd.GetListDept(listDept))
 							currentMenu = "Меню"
 						case "Меню":
-							msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Меню")
-							msg.ReplyMarkup = kbrd.MainMenu
-							if _, err := bot.Send(msg); err != nil {
-								log.Panic(err)
-							}
+							tb.sendMsg(false, id, "Меню", kbrd.MainMenu)
 							currentCalendar = false
 						}
 					case reCalendar.MatchString(text):
@@ -174,58 +163,33 @@ func TeleBot(dej *Duty.Dejurnie) {
 						} else if reCalendarNight.MatchString(text) {
 							selDate = time.Date(year, month, selDay, 22, 00, 0, 0, time.Local)
 						}
-
 						for _, nameDuty := range dej.WhoDutyAll(selDate) {
-							pht := tgbotapi.NewPhoto(update.Message.Chat.ID, fncs.GetPathImg(nameDuty))
-							pht.ReplyMarkup = kbrd.InlineKeyboardMaker(dej.GetSchedule(nameDuty))
-							pht.Caption = nameDuty + " - Дежурный " + dej.DutyToDept(nameDuty)
-							if _, err := bot.Send(pht); err != nil {
-								log.Panic(err)
-							}
+							tempText := nameDuty + " - Дежурный " + dej.DutyToDept(nameDuty)
+							tb.sendPht(nameDuty, id, tempText, kbrd.InlineKeyboardMaker(dej.GetSchedule(nameDuty)))
 						}
 					case fncs.StrInArray(dej.GetListDutyAll(), text) != -1:
-						pht := tgbotapi.NewPhoto(update.Message.Chat.ID, fncs.GetPathImg(text))
-						pht.ReplyMarkup = kbrd.InlineKeyboardMaker(dej.GetSchedule(text))
-						pht.Caption = text + " - Дежурный " + dej.DutyToDept(text)
-						if _, err := bot.Send(pht); err != nil {
-							log.Panic(err)
-						}
+						tempText := text + " - Дежурный " + dej.DutyToDept(text)
+						tb.sendPht(text, id, tempText, kbrd.InlineKeyboardMaker(dej.GetSchedule(text)))
 					case fncs.StrInArray(listDept, text) != -1:
-						msg := tgbotapi.NewMessage(update.Message.Chat.ID, text)
-						msg.ReplyMarkup = kbrd.GetListDuty(dej.GetListDuty(text))
-						if _, err := bot.Send(msg); err != nil {
-							log.Panic(err)
-						}
+						tb.sendMsg(false, id, text, kbrd.GetListDuty(dej.GetListDuty(text)))
 						currentMenu = "Дежурные"
 					case fncs.IfStrDay(text) && currentCalendar:
-						msg := tgbotapi.NewMessage(update.Message.Chat.ID, "День/Ночь")
-						msg.ReplyMarkup = kbrd.GetMenuDayNight(strings.Trim(text, "-"))
-						if _, err := bot.Send(msg); err != nil {
-							log.Panic(err)
-						}
+						tb.sendMsg(false, id, "День/Ночь", kbrd.GetMenuDayNight(strings.Trim(text, "-")))
 						currentMenu = "Календарь"
 					default:
 						//Отправлем сообщение
-						msg := tgbotapi.NewMessage(update.Message.Chat.ID, fncs.RandomRustam())
-						msg.ReplyMarkup = kbrd.MainMenu
-						if _, err := bot.Send(msg); err != nil {
-							log.Panic(err)
-						}
+						tb.sendMsg(false, id, fncs.RandomRustam(), kbrd.MainMenu)
 						currentCalendar = false
 					}
 					db.AddToLog(userId, firstName, text)
 				} else {
 					//Отправляем сообщение
-					msg := tgbotapi.NewMessage(update.Message.Chat.ID, fncs.RandomRustam())
-					msg.ReplyMarkup = kbrd.MainMenu
-					if _, err := bot.Send(msg); err != nil {
-						log.Panic(err)
-					}
+					tb.sendMsg(false, id, fncs.RandomRustam(), kbrd.MainMenu)
 					currentCalendar = false
 				}
 			} else if update.CallbackQuery != nil {
-				callback := tgbotapi.NewCallback(update.CallbackQuery.ID, update.CallbackQuery.Data)
-				if _, err := bot.Request(callback); err != nil {
+				callback := tgb.NewCallback(update.CallbackQuery.ID, update.CallbackQuery.Data)
+				if _, err := tb.Bot.Request(callback); err != nil {
 					panic(err)
 				}
 			}

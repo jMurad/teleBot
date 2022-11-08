@@ -27,7 +27,7 @@ type rasp [31]struct {
 	Test  string
 }
 
-var RunningParse bool = false
+var RunningParse = false
 
 const timeTempl = "2 1 2006 15:04 (MST)"
 

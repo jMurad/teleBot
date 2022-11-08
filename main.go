@@ -1,6 +1,7 @@
 package main
 
 import (
+	dbase "TeleBot/Database"
 	"TeleBot/Duty"
 	"TeleBot/Telegram"
 	"log"
@@ -9,30 +10,22 @@ import (
 )
 
 var dej = Duty.Dejurnie{}
+var db = dbase.TGDB{}
+var tb = Telegram.TeleBot{}
 
 func main() {
-	// t := time.Now().Local().Format("January")
-	// filename, _ := filepath.Glob("./schedules/" + s.ToLower(t) + "*.xlsx")
-
-	// _, err1 := os.Stat(filename[1])
-	// if err1 != nil {
-	// 	if os.IsNotExist(err1) {
-	// 		fmt.Println("file does not exist") // это_true
-	// 	} else {
-	// 		fmt.Println("another error")
-	// 	}
-	// } else {
-	// 	fmt.Println("file exist")
-	// 	fmt.Println(filename)
-	// }
-
 	err := godotenv.Load(".env")
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
+	//Инициализация БД и Бота
+	db.DBinit()
+	tb.TBInit()
 
 	dej.FindXLSX()
+	newdej := make(chan Duty.Dejurnie)
+	go dej.CronXLSX(newdej)
 
-	//Вызываем бота
-	Telegram.TeleBot(&dej)
+	//Запускаем бота
+	tb.RunBot(&dej, newdej, &db)
 }
