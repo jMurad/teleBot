@@ -43,8 +43,14 @@ func (tgdb *TGDB) AddToLog(userid, firstname, msg string) {
 	}
 	defer conn.Release()
 
-	_, err = conn.Exec(context.Background(), "INSERT INTO log_client (firstname, userid, message, datetime) "+
-		"VALUES ($1, $2, $3, $4::timestamptz)", firstname, userid, msg, now)
+	_, err = conn.Exec(context.Background(),
+		`INSERT INTO log_client (firstname, userid, message, datetime) 
+		VALUES ($1, $2, $3, $4::timestamptz)`,
+		firstname,
+		userid,
+		msg,
+		now,
+	)
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "QueryRow failed: %v\n", err)
 		os.Exit(1)
@@ -59,8 +65,8 @@ func (tgdb *TGDB) UsersOfPeriod(beginTime, endTime time.Time) []logClient {
 	}
 	defer conn.Release()
 
-	rows, err := conn.Query(context.Background(), `
-        SELECT firstname, userid, message
+	rows, err := conn.Query(context.Background(),
+		`SELECT firstname, userid, message
         FROM log_client 
         WHERE datetime>=$1::timestamptz AND datetime<=$2::timestamptz`,
 		beginTime,
@@ -93,8 +99,8 @@ func (tgdb *TGDB) MsgUserOfPeriod(user string, beginTime, endTime time.Time) []l
 	}
 	defer conn.Release()
 
-	rows, err := conn.Query(context.Background(), `
-        SELECT firstname, userid, message
+	rows, err := conn.Query(context.Background(),
+		`SELECT firstname, userid, message
         FROM log_client 
         WHERE (firstname=$1 OR userid=$1) AND (datetime>=$2::timestamptz AND datetime<=$3::timestamptz)`,
 		user,

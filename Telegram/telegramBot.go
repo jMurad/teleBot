@@ -76,7 +76,7 @@ func (tb *TeleBot) sendMsg(md bool, id int64, text string, kb interface{}) {
 }
 
 func (tb *TeleBot) sendPht(name string, id int64, text string, kb interface{}) {
-	pht := tgb.NewPhoto(id, fncs.GetPathImg(name))
+	pht := tgb.NewPhoto(id, os.Getenv(name))
 	pht.ReplyMarkup = kb
 	pht.Caption = text
 	if _, err := tb.Bot.Send(pht); err != nil {
@@ -132,19 +132,19 @@ func (tb *TeleBot) RunBot(dej *Duty.Dejurnie, newdej chan Duty.Dejurnie, db *dba
 						today := time.Now().Local()
 						for _, nameDuty := range dej.WhoDutyAll(today) {
 							tempText := nameDuty + " - Дежурный " + dej.DutyToDept(nameDuty)
-							tb.sendPht(nameDuty, id, tempText, kbrd.InlineKeyboardMaker(dej.GetSchedule(nameDuty)))
+							tb.sendPht(nameDuty, id, tempText, kbrd.InKeyMkr(dej.GetSched(nameDuty)))
 						}
 					case text == "Дежурные":
 						tb.sendMsg(false, id, "Дежурные", kbrd.GetListDept(listDept))
 						currentMenu = "Меню"
 					case text == "Календарь":
-						tb.sendMsg(false, id, "Календарь", kbrd.CalendarKeyboardMaker())
+						tb.sendMsg(false, id, "Календарь", kbrd.CdrKeyMkr())
 						currentMenu = "Меню"
 						currentCalendar = true
 					case text == "Назад":
 						switch currentMenu {
 						case "Календарь":
-							tb.sendMsg(false, id, "Календарь", kbrd.CalendarKeyboardMaker())
+							tb.sendMsg(false, id, "Календарь", kbrd.CdrKeyMkr())
 							currentMenu = "Меню"
 						case "Дежурные":
 							tb.sendMsg(false, id, "Дежурные", kbrd.GetListDept(listDept))
@@ -165,16 +165,16 @@ func (tb *TeleBot) RunBot(dej *Duty.Dejurnie, newdej chan Duty.Dejurnie, db *dba
 						}
 						for _, nameDuty := range dej.WhoDutyAll(selDate) {
 							tempText := nameDuty + " - Дежурный " + dej.DutyToDept(nameDuty)
-							tb.sendPht(nameDuty, id, tempText, kbrd.InlineKeyboardMaker(dej.GetSchedule(nameDuty)))
+							tb.sendPht(nameDuty, id, tempText, kbrd.InKeyMkr(dej.GetSched(nameDuty)))
 						}
 					case fncs.StrInArray(dej.GetListDutyAll(), text) != -1:
 						tempText := text + " - Дежурный " + dej.DutyToDept(text)
-						tb.sendPht(text, id, tempText, kbrd.InlineKeyboardMaker(dej.GetSchedule(text)))
+						tb.sendPht(text, id, tempText, kbrd.InKeyMkr(dej.GetSched(text)))
 					case fncs.StrInArray(listDept, text) != -1:
 						tb.sendMsg(false, id, text, kbrd.GetListDuty(dej.GetListDuty(text)))
 						currentMenu = "Дежурные"
 					case fncs.IfStrDay(text) && currentCalendar:
-						tb.sendMsg(false, id, "День/Ночь", kbrd.GetMenuDayNight(strings.Trim(text, "-")))
+						tb.sendMsg(false, id, "День/Ночь", kbrd.GetMenuDN(strings.Trim(text, "-")))
 						currentMenu = "Календарь"
 					default:
 						//Отправлем сообщение

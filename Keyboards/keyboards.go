@@ -7,8 +7,7 @@ import (
 	"time"
 )
 
-
-var	MainMenu = tgbotapi.NewReplyKeyboard(
+var MainMenu = tgbotapi.NewReplyKeyboard(
 	tgbotapi.NewKeyboardButtonRow(
 		tgbotapi.NewKeyboardButton("Кто сейчас на смене?"),
 	),
@@ -20,7 +19,7 @@ var	MainMenu = tgbotapi.NewReplyKeyboard(
 	),
 )
 
-func GetListDept(dept []string) tgbotapi.ReplyKeyboardMarkup{
+func GetListDept(dept []string) tgbotapi.ReplyKeyboardMarkup {
 	var keyboard [][]tgbotapi.KeyboardButton
 	for _, ld := range dept {
 		keyboard = append(keyboard, tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton(ld)))
@@ -29,7 +28,7 @@ func GetListDept(dept []string) tgbotapi.ReplyKeyboardMarkup{
 	return tgbotapi.NewReplyKeyboard(keyboard...)
 }
 
-func GetMenuDayNight(day string) tgbotapi.ReplyKeyboardMarkup {
+func GetMenuDN(day string) tgbotapi.ReplyKeyboardMarkup {
 	menuDayNight := tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton(day+" Дневная 🌝"),
@@ -44,18 +43,18 @@ func GetMenuDayNight(day string) tgbotapi.ReplyKeyboardMarkup {
 	return menuDayNight
 }
 
-func InlineKeyboardMaker(schedule  [31]string) tgbotapi.InlineKeyboardMarkup {
+func InKeyMkr(schedule [31]string) tgbotapi.InlineKeyboardMarkup {
 	var row []tgbotapi.InlineKeyboardButton
 	var keyboard [][]tgbotapi.InlineKeyboardButton
 	i := 0
-	for day, smn := range schedule  {
+	for day, smn := range schedule {
 		if smn == "Day" {
 			i += 1
-			text := strconv.Itoa(day+1)+" 🌝"
-			row = append(row, tgbotapi.NewInlineKeyboardButtonData(text,"🌝"))
+			text := strconv.Itoa(day+1) + " 🌝"
+			row = append(row, tgbotapi.NewInlineKeyboardButtonData(text, "🌝"))
 		} else if smn == "Night" {
 			i += 1
-			text := strconv.Itoa(day+1)+" 🌚"
+			text := strconv.Itoa(day+1) + " 🌚"
 			row = append(row, tgbotapi.NewInlineKeyboardButtonData(text, "🌚"))
 		}
 		if i > 2 {
@@ -69,7 +68,7 @@ func InlineKeyboardMaker(schedule  [31]string) tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(keyboard...)
 }
 
-func CalendarKeyboardMaker() tgbotapi.ReplyKeyboardMarkup {
+func CdrKeyMkr() tgbotapi.ReplyKeyboardMarkup {
 	var row []tgbotapi.KeyboardButton
 	var keyboard [][]tgbotapi.KeyboardButton
 	i := 0
@@ -99,7 +98,7 @@ func GetListDuty(listDuty []string) tgbotapi.ReplyKeyboardMarkup {
 	var keyboard [][]tgbotapi.KeyboardButton
 	for i, ld := range listDuty {
 		row = append(row, tgbotapi.NewKeyboardButton(ld))
-		if (i+1) % 2 == 0 {
+		if (i+1)%2 == 0 {
 			keyboard = append(keyboard, row)
 			row = []tgbotapi.KeyboardButton{}
 		}

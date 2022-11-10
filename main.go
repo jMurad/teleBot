@@ -4,9 +4,8 @@ import (
 	dbase "TeleBot/Database"
 	"TeleBot/Duty"
 	"TeleBot/Telegram"
-	"log"
-
 	"github.com/joho/godotenv"
+	"log"
 )
 
 var dej = Duty.Dejurnie{}
@@ -18,11 +17,12 @@ func main() {
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
+
 	//Инициализация БД и Бота
 	db.DBinit()
 	tb.TBInit()
+	dej.DutyInit()
 
-	dej.FindXLSX()
 	newdej := make(chan Duty.Dejurnie)
 	go dej.CronXLSX(newdej)
 
