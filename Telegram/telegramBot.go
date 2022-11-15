@@ -63,7 +63,7 @@ func (tb *TeleBot) TBInit() {
 func (tb *TeleBot) startServer() {
 	//Слушаем Telegram
 	go func() {
-		err := http.ListenAndServeTLS("0.0.0.0:8443", tb.cert, tb.key, nil)
+		err := http.ListenAndServeTLS(":8443", tb.cert, tb.key, nil)
 		if err != nil {
 			log.Panic(err)
 		}
