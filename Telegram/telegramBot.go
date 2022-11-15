@@ -20,6 +20,9 @@ import (
 type TeleBot struct {
 	Bot     *tgb.BotAPI
 	Updates tgb.UpdatesChannel
+	host    string
+	cert    string
+	key     string
 }
 
 func (tb *TeleBot) TBInit() {
@@ -35,7 +38,10 @@ func (tb *TeleBot) TBInit() {
 
 	log.Printf("Authorized on account %s", tb.Bot.Self.UserName)
 
-	wh, _ := tgb.NewWebhookWithCert("https://88.210.3.128:8443/"+tb.Bot.Token, "keys/SELF_SIGN_CERT.pem")
+	tb.host = os.Getenv("HOST")
+	tb.cert = os.Getenv("CERT")
+	tb.key = os.Getenv("KEY")
+	wh, _ := tgb.NewWebhookWithCert(tb.host+tb.Bot.Token, tb.cert)
 	_, err = tb.Bot.Request(wh)
 	if err != nil {
 		log.Fatal(err)
@@ -57,7 +63,7 @@ func (tb *TeleBot) TBInit() {
 func (tb *TeleBot) startServer() {
 	//Слушаем Telegram
 	go func() {
-		err := http.ListenAndServeTLS("88.210.3.128:8443", "keys/SELF_SIGN_CERT.pem", "keys/SELF_SIGN_CERT.key", nil)
+		err := http.ListenAndServeTLS("0.0.0.0:8443", tb.cert, tb.key, nil)
 		if err != nil {
 			log.Panic(err)
 		}
