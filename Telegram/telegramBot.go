@@ -6,6 +6,7 @@ import (
 	fncs "TeleBot/Functions"
 	kbrd "TeleBot/Keyboards"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"reflect"
@@ -63,7 +64,12 @@ func (tb *TeleBot) TBInit() {
 func (tb *TeleBot) startServer() {
 	//Слушаем Telegram
 	go func() {
-		err := http.ListenAndServeTLS("0.0.0.0:8443", tb.cert, tb.key, nil)
+		l, err := net.Listen("tcp4", ":8443")
+		if err != nil {
+			log.Panic(err)
+		}
+		err = http.ServeTLS(l, nil, tb.cert, tb.key)
+		//err := http.ListenAndServeTLS("0.0.0.0:8443", tb.cert, tb.key, nil)
 		if err != nil {
 			log.Panic(err)
 		}
