@@ -19,9 +19,6 @@ import (
 type TeleBot struct {
 	Bot     *tgb.BotAPI
 	Updates tgb.UpdatesChannel
-	host    string
-	cert    string
-	key     string
 }
 
 func (tb *TeleBot) TBInit() {
@@ -37,10 +34,10 @@ func (tb *TeleBot) TBInit() {
 
 	log.Printf("Authorized on account %s", tb.Bot.Self.UserName)
 
-	tb.host = os.Getenv("HOST")
-	tb.cert = os.Getenv("CERT")
-	tb.key = os.Getenv("KEY")
-	wh, _ := tgb.NewWebhookWithCert(tb.host+tb.Bot.Token, tb.cert)
+	host := os.Getenv("HOST")
+	cert := os.Getenv("CERT")
+
+	wh, _ := tgb.NewWebhookWithCert(host+tb.Bot.Token, cert)
 	_, err = tb.Bot.Request(wh)
 	if err != nil {
 		log.Fatal(err)
@@ -58,21 +55,6 @@ func (tb *TeleBot) TBInit() {
 	//Получаем обновления от бота
 	tb.Updates = tb.Bot.ListenForWebhook("/" + tb.Bot.Token)
 }
-
-//func (tb *TeleBot) startServer() {
-//	//Слушаем Telegram
-//	go func() {
-//		l, err := net.Listen("tcp4", ":8443")
-//		if err != nil {
-//			log.Panic(err)
-//		}
-//		err = http.ServeTLS(l, nil, tb.cert, tb.key)
-//		//err := http.ListenAndServeTLS("0.0.0.0:8443", tb.cert, tb.key, nil)
-//		if err != nil {
-//			log.Panic(err)
-//		}
-//	}()
-//}
 
 func (tb *TeleBot) sendMsg(md bool, id int64, text string, kb interface{}) {
 	msg := tgb.NewMessage(id, text)

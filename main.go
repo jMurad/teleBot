@@ -6,7 +6,6 @@ import (
 	"TeleBot/Telegram"
 	"github.com/joho/godotenv"
 	"log"
-	"net"
 	"net/http"
 	"os"
 )
@@ -22,16 +21,12 @@ func main() {
 	}
 
 	//host := os.Getenv("HOST")
-	cert := os.Getenv("CERT")
-	key := os.Getenv("KEY")
+
 	//Слушаем Telegram
 	go func() {
-		l, err := net.Listen("tcp4", ":8443")
-		if err != nil {
-			log.Panic(err)
-		}
-		err = http.ServeTLS(l, nil, cert, key)
-		//err := http.ListenAndServeTLS("0.0.0.0:8443", tb.cert, tb.key, nil)
+		cert := os.Getenv("CERT")
+		key := os.Getenv("KEY")
+		err := http.ListenAndServeTLS(":8443", cert, key, nil)
 		if err != nil {
 			log.Panic(err)
 		}
