@@ -6,8 +6,6 @@ import (
 	fncs "TeleBot/Functions"
 	kbrd "TeleBot/Keyboards"
 	"log"
-	"net"
-	"net/http"
 	"os"
 	"reflect"
 	"regexp"
@@ -61,20 +59,20 @@ func (tb *TeleBot) TBInit() {
 	tb.Updates = tb.Bot.ListenForWebhook("/" + tb.Bot.Token)
 }
 
-func (tb *TeleBot) startServer() {
-	//Слушаем Telegram
-	go func() {
-		l, err := net.Listen("tcp4", ":8443")
-		if err != nil {
-			log.Panic(err)
-		}
-		err = http.ServeTLS(l, nil, tb.cert, tb.key)
-		//err := http.ListenAndServeTLS("0.0.0.0:8443", tb.cert, tb.key, nil)
-		if err != nil {
-			log.Panic(err)
-		}
-	}()
-}
+//func (tb *TeleBot) startServer() {
+//	//Слушаем Telegram
+//	go func() {
+//		l, err := net.Listen("tcp4", ":8443")
+//		if err != nil {
+//			log.Panic(err)
+//		}
+//		err = http.ServeTLS(l, nil, tb.cert, tb.key)
+//		//err := http.ListenAndServeTLS("0.0.0.0:8443", tb.cert, tb.key, nil)
+//		if err != nil {
+//			log.Panic(err)
+//		}
+//	}()
+//}
 
 func (tb *TeleBot) sendMsg(md bool, id int64, text string, kb interface{}) {
 	msg := tgb.NewMessage(id, text)
@@ -97,7 +95,7 @@ func (tb *TeleBot) sendPht(name string, id int64, text string, kb interface{}) {
 }
 
 func (tb *TeleBot) RunBot(dej *Duty.Dejurnie, newdej chan Duty.Dejurnie, db *dbase.TGDB) {
-	tb.startServer()
+	//tb.startServer()
 
 	reNumber := regexp.MustCompile(`^\d\d?`)
 	reCalendarDay := regexp.MustCompile(`^\d\d? Дневная \x{1F31D}`)
