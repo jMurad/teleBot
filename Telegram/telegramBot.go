@@ -30,7 +30,9 @@ func (tb *TeleBot) TBInit() {
 		panic(err)
 	}
 
-	tb.Bot.Debug = true
+	if os.Getenv("DEBAG") == "true" {
+		tb.Bot.Debug = true
+	}
 
 	log.Printf("Authorized on account %s", tb.Bot.Self.UserName)
 
