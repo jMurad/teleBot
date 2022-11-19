@@ -3,8 +3,8 @@ package Telegram
 import (
 	dbase "TeleBot/Database"
 	"TeleBot/Duty"
-	fncs "TeleBot/Functions"
-	kbrd "TeleBot/Keyboards"
+	fns "TeleBot/Functions"
+	kb "TeleBot/Keyboards"
 	"log"
 	"os"
 	"reflect"
@@ -35,7 +35,7 @@ func (tb *TeleBot) TBInit() {
 	log.Printf("Authorized on account %s", tb.Bot.Self.UserName)
 
 	host := os.Getenv("HOST")
-	cert := os.Getenv("CERT")
+	cert := tgb.FilePath(os.Getenv("CERT"))
 
 	wh, _ := tgb.NewWebhookWithCert(host+tb.Bot.Token, cert)
 	_, err = tb.Bot.Request(wh)
@@ -68,7 +68,7 @@ func (tb *TeleBot) sendMsg(md bool, id int64, text string, kb interface{}) {
 }
 
 func (tb *TeleBot) sendPht(name string, id int64, text string, kb interface{}) {
-	pht := tgb.NewPhoto(id, os.Getenv(name))
+	pht := tgb.NewPhoto(id, tgb.FilePath(os.Getenv(name)))
 	pht.ReplyMarkup = kb
 	pht.Caption = text
 	if _, err := tb.Bot.Send(pht); err != nil {
@@ -110,39 +110,39 @@ func (tb *TeleBot) RunBot(dej *Duty.Dejurnie, newdej chan Duty.Dejurnie, db *dba
 								break
 							}
 							if i+lenReport >= len(report) {
-								tb.sendMsg(true, id, report[i:], kbrd.MainMenu)
+								tb.sendMsg(true, id, report[i:], kb.MainMenu)
 							} else {
-								tb.sendMsg(true, id, report[i:i+lenReport], kbrd.MainMenu)
+								tb.sendMsg(true, id, report[i:i+lenReport], kb.MainMenu)
 							}
 							i += lenReport
 						}
 					case text == "/start":
 						tempText := "Ассалам алейкум! Я скажу тебе кто сейчас на смене!"
-						tb.sendMsg(false, id, tempText, kbrd.MainMenu)
+						tb.sendMsg(false, id, tempText, kb.MainMenu)
 						currentCalendar = false
 					case text == "Кто сейчас на смене?":
 						today := time.Now().Local()
 						for _, nameDuty := range dej.WhoDutyAll(today) {
 							tempText := nameDuty + " - Дежурный " + dej.DutyToDept(nameDuty)
-							tb.sendPht(nameDuty, id, tempText, kbrd.InKeyMkr(dej.GetSched(nameDuty)))
+							tb.sendPht(nameDuty, id, tempText, kb.InKeyMkr(dej.GetSched(nameDuty)))
 						}
 					case text == "Дежурные":
-						tb.sendMsg(false, id, "Дежурные", kbrd.GetListDept(listDept))
+						tb.sendMsg(false, id, "Дежурные", kb.GetListDept(listDept))
 						currentMenu = "Меню"
 					case text == "Календарь":
-						tb.sendMsg(false, id, "Календарь", kbrd.CdrKeyMkr())
+						tb.sendMsg(false, id, "Календарь", kb.CdrKeyMkr())
 						currentMenu = "Меню"
 						currentCalendar = true
 					case text == "Назад":
 						switch currentMenu {
 						case "Календарь":
-							tb.sendMsg(false, id, "Календарь", kbrd.CdrKeyMkr())
+							tb.sendMsg(false, id, "Календарь", kb.CdrKeyMkr())
 							currentMenu = "Меню"
 						case "Дежурные":
-							tb.sendMsg(false, id, "Дежурные", kbrd.GetListDept(listDept))
+							tb.sendMsg(false, id, "Дежурные", kb.GetListDept(listDept))
 							currentMenu = "Меню"
 						case "Меню":
-							tb.sendMsg(false, id, "Меню", kbrd.MainMenu)
+							tb.sendMsg(false, id, "Меню", kb.MainMenu)
 							currentCalendar = false
 						}
 					case reCalendar.MatchString(text):
@@ -157,26 +157,26 @@ func (tb *TeleBot) RunBot(dej *Duty.Dejurnie, newdej chan Duty.Dejurnie, db *dba
 						}
 						for _, nameDuty := range dej.WhoDutyAll(selDate) {
 							tempText := nameDuty + " - Дежурный " + dej.DutyToDept(nameDuty)
-							tb.sendPht(nameDuty, id, tempText, kbrd.InKeyMkr(dej.GetSched(nameDuty)))
+							tb.sendPht(nameDuty, id, tempText, kb.InKeyMkr(dej.GetSched(nameDuty)))
 						}
-					case fncs.StrInArray(dej.GetListDutyAll(), text) != -1:
+					case fns.StrInArray(dej.GetListDutyAll(), text) != -1:
 						tempText := text + " - Дежурный " + dej.DutyToDept(text)
-						tb.sendPht(text, id, tempText, kbrd.InKeyMkr(dej.GetSched(text)))
-					case fncs.StrInArray(listDept, text) != -1:
-						tb.sendMsg(false, id, text, kbrd.GetListDuty(dej.GetListDuty(text)))
+						tb.sendPht(text, id, tempText, kb.InKeyMkr(dej.GetSched(text)))
+					case fns.StrInArray(listDept, text) != -1:
+						tb.sendMsg(false, id, text, kb.GetListDuty(dej.GetListDuty(text)))
 						currentMenu = "Дежурные"
-					case fncs.IfStrDay(text) && currentCalendar:
-						tb.sendMsg(false, id, "День/Ночь", kbrd.GetMenuDN(strings.Trim(text, "-")))
+					case fns.IfStrDay(text) && currentCalendar:
+						tb.sendMsg(false, id, "День/Ночь", kb.GetMenuDN(strings.Trim(text, "-")))
 						currentMenu = "Календарь"
 					default:
 						//Отправлем сообщение
-						tb.sendMsg(false, id, fncs.RandomRustam(), kbrd.MainMenu)
+						tb.sendMsg(false, id, fns.RandomRustam(), kb.MainMenu)
 						currentCalendar = false
 					}
 					db.AddToLog(userId, firstName, text)
 				} else {
 					//Отправляем сообщение
-					tb.sendMsg(false, id, fncs.RandomRustam(), kbrd.MainMenu)
+					tb.sendMsg(false, id, fns.RandomRustam(), kb.MainMenu)
 					currentCalendar = false
 				}
 			} else if update.CallbackQuery != nil {

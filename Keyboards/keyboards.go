@@ -20,6 +20,7 @@ var MainMenu = tgbotapi.NewReplyKeyboard(
 )
 
 func GetListDept(dept []string) tgbotapi.ReplyKeyboardMarkup {
+
 	var keyboard [][]tgbotapi.KeyboardButton
 	for _, ld := range dept {
 		keyboard = append(keyboard, tgbotapi.NewKeyboardButtonRow(tgbotapi.NewKeyboardButton(ld)))
